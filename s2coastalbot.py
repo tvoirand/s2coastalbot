@@ -7,9 +7,35 @@ Twitter bot that posts newly acquired Sentinel-2 images of coastal areas.
 import os
 import argparse
 import configparser
+import json
+import requests
 
 # third party imports
 import tweepy
+
+
+def get_location_name(lat, lon):
+    """
+    Convert latitude and longitude into an address using OSM
+    Input:
+        -lat    float
+        -lon    float
+    Output:
+        -       str
+    """
+
+    headers = {"Accept-Language": "en-US,en;q=0.8"}
+    url = "http://nominatim.openstreetmap.org/reverse?lat={}&lon={}&".format(lat, lon)
+    url += "addressdetails=0&format=json&zoom=6&extratags=0"
+
+    response = json.loads(
+        requests.get(url, headers=headers).text
+    )
+
+    if "error" in response:
+        return "Unknown location, do you recognise it?"
+
+    return response["display_name"]
 
 
 class S2CoastalBot():
