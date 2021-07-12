@@ -12,6 +12,47 @@ import requests
 
 # third party imports
 import tweepy
+from sentinelsat import SentinelAPI
+from sentinelsat import SentinelProductsAPI
+from sentinelsat import make_path_filter
+from sentinelsat import read_geojson
+from sentinelsat import geojson_to_wkt
+import pandas as pd
+
+
+def find_image(copernicus_user, copernicus_password, aoi_file):
+    """
+    Randomly find newly acquired Sentinel-2 image of coastal area.
+    Input:
+        -copernicus_user        str
+        -copernicus_password    str
+        -aoi_file               str
+    """
+
+    # connect to APIs
+    api = SentinelAPI(copernicus_user, copernicus_password)
+    products_api = SentinelProductsAPI(copernicus_user, copernicus_password)
+
+    # read footprint
+    footprint = geojson_to_wkt(read_geojson(aoi_file))
+
+    # search images
+    products = api.query(
+        footprint,
+        date=("NOW-6DAY", "NOW"),
+        platformname="Sentinel-2",
+    )
+
+    # convert to Pandas DataFrame
+    products_df = api.to_dataframe(products)
+
+    # filter out products with coulds and randomly pick one product
+    products_df = products_df[products_df["cloudcoverpercentage"] < 0.05]
+    product_row = products_df.sample(n=1).iloc[0]
+
+    # download only TCI band
+    nodefilter = make_path_filter("*_TCI_10m.jp2")
+    products_api.download(product_row["uuid"], nodefilter=nodefilter)
 
 
 def get_location_name(lat, lon):
@@ -80,11 +121,15 @@ class S2CoastalBot():
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument()
+    parser.add_argument("-u", "--user", help="Copernicus user")
+    parser.add_argument("-p", "--password", help="Copernicus password")
+    parser.add_argument("-a", "--aoi", help="Area of interest geojson file")
     args = parser.parse_args()
 
-    s2coastalbot = S2CoastalBot()
+    find_image(args.user, args.password, args.aoi)
 
-    s2coastalbot.authenticate()
-
-    s2coastalbot.post_tweet()
+    # s2coastalbot = S2CoastalBot()
+    #
+    # s2coastalbot.authenticate()
+    #
+    # s2coastalbot.post_tweet()
