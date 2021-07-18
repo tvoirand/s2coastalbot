@@ -51,7 +51,7 @@ def find_image(copernicus_user, copernicus_password, aoi_file):
     product_row = products_df.sample(n=1).iloc[0]
 
     # download only TCI band
-    nodefilter = make_path_filter("*_TCI_10m.jp2")
+    nodefilter = make_path_filter("*_tci.jp2")
     products_api.download(product_row["uuid"], nodefilter=nodefilter)
 
 
@@ -69,9 +69,7 @@ def get_location_name(lat, lon):
     url = "http://nominatim.openstreetmap.org/reverse?lat={}&lon={}&".format(lat, lon)
     url += "addressdetails=0&format=json&zoom=6&extratags=0"
 
-    response = json.loads(
-        requests.get(url, headers=headers).text
-    )
+    response = json.loads(requests.get(url, headers=headers).text)
 
     if "error" in response:
         return "Unknown location, do you recognise it?"
@@ -79,7 +77,7 @@ def get_location_name(lat, lon):
     return response["display_name"]
 
 
-class S2CoastalBot():
+class S2CoastalBot:
     """
     Class for S2CoastalBot.
     """
