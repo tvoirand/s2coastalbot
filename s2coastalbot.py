@@ -20,7 +20,7 @@ from sentinelsat import geojson_to_wkt
 import pandas as pd
 
 
-def find_image(copernicus_user, copernicus_password, aoi_file):
+def find_image(copernicus_user, copernicus_password, aoi_file, output_folder=None):
     """
     Randomly find newly acquired Sentinel-2 image of coastal area.
     Input:
@@ -50,9 +50,19 @@ def find_image(copernicus_user, copernicus_password, aoi_file):
     products_df = products_df[products_df["cloudcoverpercentage"] < 0.05]
     product_row = products_df.sample(n=1).iloc[0]
 
+    # create output folder if necessary
+    if output_folder is None:
+        output_folder = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), "data"
+        )
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
     # download only TCI band
     nodefilter = make_path_filter("*_tci.jp2")
-    products_api.download(product_row["uuid"], nodefilter=nodefilter)
+    products_api.download(
+        product_row["uuid"], directory_path=output_folder, nodefilter=nodefilter
+    )
 
 
 def get_location_name(lat, lon):

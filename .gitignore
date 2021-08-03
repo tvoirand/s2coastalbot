@@ -7,3 +7,4 @@ __pycache__/
 
 # files specific to s2coastalbot
 config/config.ini
+data/*
