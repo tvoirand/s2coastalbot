@@ -12,3 +12,7 @@ $ conda activate s2coastalbot
 $ cd /path/to/s2coastalbot/where/setup.py/is
 $ pip intall -e .
 ```
+
+### TODO
+
+* Add exceptions and retries for downloading

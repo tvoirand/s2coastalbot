@@ -55,7 +55,20 @@ class S2CoastalBot:
         Constructor for the S2CoastalBot class.
         """
 
-        print("not implemented yet")
+        # read config
+        config_file = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "config", "config.ini"
+        )
+        config = configparser.ConfigParser()
+        config.read(config_file)
+        copernicus_user = config["access"]["copernicus_user"]
+        copernicus_password = config["access"]["copernicus_password"]
+        aoi_file = config["misc"]["aoi_file"]
+
+        # download Sentinel-2 True Color Image
+        tci_file_path = download_tci_image(copernicus_user, copernicus_password, aoi_file)
+
+        return None
 
     def authenticate_twitter():
         """
@@ -86,16 +99,8 @@ class S2CoastalBot:
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-u", "--user", help="Copernicus user")
-    parser.add_argument("-p", "--password", help="Copernicus password")
-    parser.add_argument("-a", "--aoi", help="Area of interest geojson file")
-    args = parser.parse_args()
+    s2coastalbot = S2CoastalBot()
 
-    tci_file_path = download_tci_image(args.user, args.password, args.aoi)
-
-    # s2coastalbot = S2CoastalBot()
-    #
     # s2coastalbot.authenticate()
     #
     # s2coastalbot.post_tweet()
