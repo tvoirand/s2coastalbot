@@ -12,6 +12,7 @@ dependencies = [
     "tweepy",
     "sentinelsat",
     "pandas",
+    "shapely",
 ]
 
 

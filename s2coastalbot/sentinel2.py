@@ -10,22 +10,26 @@ import json
 import requests
 
 # third party imports
-import tweepy
 from sentinelsat import SentinelAPI
 from sentinelsat import SentinelProductsAPI
 from sentinelsat import make_path_filter
 from sentinelsat import read_geojson
 from sentinelsat import geojson_to_wkt
-import pandas as pd
+import shapely.wkt
 
 
-def download_tci_image(copernicus_user, copernicus_password, aoi_file, output_folder=None):
+def download_tci_image(
+    copernicus_user, copernicus_password, aoi_file, output_folder=None
+):
     """
     Download a random recently acquired Sentinel-2 image.
     Input:
         -copernicus_user        str
         -copernicus_password    str
         -aoi_file               str
+    Output:
+        -tci_file_path          str
+        -center_coords          (float, float)
     """
 
     def find_tci_file(product_path):
@@ -72,6 +76,11 @@ def download_tci_image(copernicus_user, copernicus_password, aoi_file, output_fo
         product_row["uuid"], directory_path=output_folder, nodefilter=nodefilter
     )
 
-    # return tci file path
+    # get center lat lon
+    center_coords = shapely.wkt.loads(product_info["footprint"]).centroid.coords[0]
+
+    # find tci file path
     safe_path = os.path.join(output_folder, product_info["node_path"][2:])
-    return find_tci_file(safe_path)
+    tci_file_path = find_tci_file(safe_path)
+
+    return tci_file_path, center_coords

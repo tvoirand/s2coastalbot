@@ -23,18 +23,20 @@ import pandas as pd
 from s2coastalbot.sentinel2 import download_tci_image
 
 
-def get_location_name(lat, lon):
+def get_location_name(coords):
     """
     Convert latitude and longitude into an address using OSM
     Input:
-        -lat    float
-        -lon    float
+        -coords     (float, float)
+            lon, lat
     Output:
-        -       str
+        -           str
     """
 
     headers = {"Accept-Language": "en-US,en;q=0.8"}
-    url = "http://nominatim.openstreetmap.org/reverse?lat={}&lon={}&".format(lat, lon)
+    url = "http://nominatim.openstreetmap.org/reverse?lat={}&lon={}&".format(
+        coords[1], coords[0]
+    )
     url += "addressdetails=0&format=json&zoom=6&extratags=0"
 
     response = json.loads(requests.get(url, headers=headers).text)
@@ -57,7 +59,9 @@ class S2CoastalBot:
 
         # read config
         config_file = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "config", "config.ini"
+            os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
+            "config",
+            "config.ini",
         )
         config = configparser.ConfigParser()
         config.read(config_file)
@@ -70,7 +74,9 @@ class S2CoastalBot:
         access_token_secret = config.get("access", "access_token_secret")
 
         # download Sentinel-2 True Color Image
-        tci_file_path = download_tci_image(copernicus_user, copernicus_password, aoi_file)
+        tci_file_path, center_coords = download_tci_image(
+            copernicus_user, copernicus_password, aoi_file
+        )
 
         # authenticate twitter account
         auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
@@ -78,7 +84,10 @@ class S2CoastalBot:
         api = tweepy.API(auth)
 
         # post tweet
-        api.update_status(status="Not implemented yet")
+        # api.update_status("not implemented yet")
+        api.update_with_media(
+            filename=tci_file_path, status=get_location_name(center_coords)
+        )
 
 
 if __name__ == "__main__":
