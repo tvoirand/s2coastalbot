@@ -61,46 +61,26 @@ class S2CoastalBot:
         )
         config = configparser.ConfigParser()
         config.read(config_file)
-        copernicus_user = config["access"]["copernicus_user"]
-        copernicus_password = config["access"]["copernicus_password"]
-        aoi_file = config["misc"]["aoi_file"]
-
-        # download Sentinel-2 True Color Image
-        tci_file_path = download_tci_image(copernicus_user, copernicus_password, aoi_file)
-
-        return None
-
-    def authenticate_twitter():
-        """
-        Twitter authentication.
-        """
-
-        # read config file
-        project_path = os.path.dirname(os.path.realpath(__file__))
-        config = configparser.ConfigParser()
-        config.read(os.path.join(project_path, "config", "config.ini"))
+        copernicus_user = config.get("access", "copernicus_user")
+        copernicus_password = config.get("access", "copernicus_password")
+        aoi_file = config.get("misc", "aoi_file")
         consumer_key = config.get("access", "consumer_key")
         consumer_secret = config.get("access", "consumer_secret")
         access_token = config.get("access", "access_token")
         access_token_secret = config.get("access", "access_token_secret")
 
-        # twitter authentification
+        # download Sentinel-2 True Color Image
+        tci_file_path = download_tci_image(copernicus_user, copernicus_password, aoi_file)
+
+        # authenticate twitter account
         auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
         auth.set_access_token(access_token, access_token_secret)
         api = tweepy.API(auth)
 
-    def post_tweet():
-        """
-        Post tweet of newly acquired Sentinel-2 coastal image.
-        """
-
+        # post tweet
         api.update_status(status="Not implemented yet")
 
 
 if __name__ == "__main__":
 
     s2coastalbot = S2CoastalBot()
-
-    # s2coastalbot.authenticate()
-    #
-    # s2coastalbot.post_tweet()
