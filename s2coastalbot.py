@@ -20,7 +20,7 @@ from sentinelsat import geojson_to_wkt
 import pandas as pd
 
 
-def find_image(copernicus_user, copernicus_password, aoi_file, output_folder=None):
+def download_tci_image(copernicus_user, copernicus_password, aoi_file, output_folder=None):
     """
     Randomly find newly acquired Sentinel-2 image of coastal area.
     Input:
@@ -28,6 +28,15 @@ def find_image(copernicus_user, copernicus_password, aoi_file, output_folder=Non
         -copernicus_password    str
         -aoi_file               str
     """
+
+    def find_tci_file(product_path):
+        """Look for TCI file within S2 product"""
+        for path, dirs, files in os.walk(product_path):
+            if path.endswith("IMG_DATA"):
+                for f in files:
+                    if f.lower().endswith("_tci.jp2"):
+                        return os.path.join(path, f)
+        return None
 
     # connect to APIs
     api = SentinelAPI(copernicus_user, copernicus_password)
@@ -60,9 +69,13 @@ def find_image(copernicus_user, copernicus_password, aoi_file, output_folder=Non
 
     # download only TCI band
     nodefilter = make_path_filter("*_tci.jp2")
-    products_api.download(
+    product_info = products_api.download(
         product_row["uuid"], directory_path=output_folder, nodefilter=nodefilter
     )
+
+    # return tci file path
+    safe_path = os.path.join(output_folder, product_info["node_path"][2:])
+    return find_tci_file(safe_path)
 
 
 def get_location_name(lat, lon):
@@ -99,7 +112,7 @@ class S2CoastalBot:
 
         print("not implemented yet")
 
-    def authenticate():
+    def authenticate_twitter():
         """
         Twitter authentication.
         """
@@ -134,7 +147,7 @@ if __name__ == "__main__":
     parser.add_argument("-a", "--aoi", help="Area of interest geojson file")
     args = parser.parse_args()
 
-    find_image(args.user, args.password, args.aoi)
+    tci_file_path = download_tci_image(args.user, args.password, args.aoi)
 
     # s2coastalbot = S2CoastalBot()
     #
