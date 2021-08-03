@@ -18,4 +18,7 @@ $ pip intall -e .
 * Add exceptions and retries for downloading
 * Add logs
 * Improve postprocessing
+    * Improve histograms
+    * Subset instead of downsampling image
 * Download only full size images (and not images on edge of swath)
+* Add data folder cleaning routine

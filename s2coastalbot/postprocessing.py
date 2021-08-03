@@ -23,7 +23,7 @@ def postprocess_tci_image(input_file):
 
     # create some constants
     output_file = "{}_postprocessed.png".format(os.path.splitext(input_file)[0])
-    upscale_factor = 1/8
+    upscale_factor = 1/10
 
     # open input dataset
     with rasterio.open(input_file) as in_dataset:
