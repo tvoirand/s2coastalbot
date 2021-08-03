@@ -21,6 +21,7 @@ import pandas as pd
 
 # local project imports
 from s2coastalbot.sentinel2 import download_tci_image
+from s2coastalbot.postprocessing import postprocess_tci_image
 
 
 def get_location_name(coords):
@@ -78,15 +79,17 @@ class S2CoastalBot:
             copernicus_user, copernicus_password, aoi_file
         )
 
+        # postprocess image to fit twitter contraints
+        postprocessed_file_path = postprocess_tci_image(tci_file_path)
+
         # authenticate twitter account
         auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
         auth.set_access_token(access_token, access_token_secret)
         api = tweepy.API(auth)
 
         # post tweet
-        # api.update_status("not implemented yet")
         api.update_with_media(
-            filename=tci_file_path, status=get_location_name(center_coords)
+            filename=postprocessed_file_path, status=get_location_name(center_coords)
         )
 
 

@@ -16,3 +16,6 @@ $ pip intall -e .
 ### TODO
 
 * Add exceptions and retries for downloading
+* Add logs
+* Improve postprocessing
+* Download only full size images (and not images on edge of swath)

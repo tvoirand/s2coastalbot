@@ -13,6 +13,7 @@ dependencies = [
     "sentinelsat",
     "pandas",
     "shapely",
+    "rasterio",
 ]
 
 
