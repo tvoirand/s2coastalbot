@@ -6,6 +6,7 @@
 config/config.ini
 data/*
 tests/*
+logs/*
 
 
 

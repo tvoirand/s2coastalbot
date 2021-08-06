@@ -9,6 +9,7 @@ import argparse
 import configparser
 import json
 import requests
+import logging
 
 # third party imports
 import tweepy
@@ -22,6 +23,7 @@ import pandas as pd
 # local project imports
 from s2coastalbot.sentinel2 import download_tci_image
 from s2coastalbot.postprocessing import postprocess_tci_image
+from s2coastalbot.custom_logger import get_custom_logger
 
 
 def get_location_name(coords):
@@ -58,7 +60,11 @@ class S2CoastalBot:
         Constructor for the S2CoastalBot class.
         """
 
+        # create logger
+        logger = get_custom_logger("s2coastalbot", logging.INFO)
+
         # read config
+        logger.info("Reading config")
         config_file = os.path.join(
             os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
             "config",
@@ -75,19 +81,23 @@ class S2CoastalBot:
         access_token_secret = config.get("access", "access_token_secret")
 
         # download Sentinel-2 True Color Image
+        logger.info("Downloading Sentinel-2 TCI image")
         tci_file_path, center_coords = download_tci_image(
             copernicus_user, copernicus_password, aoi_file
         )
 
         # postprocess image to fit twitter contraints
+        logger.info("Postprocessing image")
         postprocessed_file_path = postprocess_tci_image(tci_file_path)
 
         # authenticate twitter account
+        logger.info("Authenticating against twitter API")
         auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
         auth.set_access_token(access_token, access_token_secret)
         api = tweepy.API(auth)
 
         # post tweet
+        logger.info("Posting tweet")
         api.update_with_media(
             filename=postprocessed_file_path, status=get_location_name(center_coords)
         )
