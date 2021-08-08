@@ -17,6 +17,9 @@ from sentinelsat import read_geojson
 from sentinelsat import geojson_to_wkt
 import shapely.wkt
 
+# local project imports
+from s2coastalbot.geoutils import get_location_name
+
 
 def download_tci_image(
     copernicus_user, copernicus_password, aoi_file, output_folder=None
@@ -60,7 +63,14 @@ def download_tci_image(
 
     # filter out products with coulds and randomly pick one product
     products_df = products_df[products_df["cloudcoverpercentage"] < 0.05]
-    product_row = products_df.sample(n=1).iloc[0]
+
+    # select image for which location is recognized by openstreetmap
+    location_is_recognized = False
+    while not location_is_recognized:
+        product_row = products_df.sample(n=1).iloc[0]
+        center_coords = shapely.wkt.loads(product_row["footprint"]).centroid.coords[0]
+        if not get_location_name(center_coords) == "Unknown location":
+            location_is_recognized = True
 
     # create output folder if necessary
     if output_folder is None:

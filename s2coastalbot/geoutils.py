@@ -26,6 +26,6 @@ def get_location_name(coords):
     response = json.loads(requests.get(url, headers=headers).text)
 
     if "error" in response:
-        return "Unknown location, do you recognise it?"
+        return "Unknown location"
 
     return response["display_name"]
