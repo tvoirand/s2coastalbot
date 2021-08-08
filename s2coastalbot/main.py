@@ -7,8 +7,6 @@ Twitter bot that posts newly acquired Sentinel-2 images of coastal areas.
 import os
 import argparse
 import configparser
-import json
-import requests
 import logging
 
 # third party imports
@@ -24,30 +22,7 @@ import pandas as pd
 from s2coastalbot.sentinel2 import download_tci_image
 from s2coastalbot.postprocessing import postprocess_tci_image
 from s2coastalbot.custom_logger import get_custom_logger
-
-
-def get_location_name(coords):
-    """
-    Convert latitude and longitude into an address using OSM
-    Input:
-        -coords     (float, float)
-            lon, lat
-    Output:
-        -           str
-    """
-
-    headers = {"Accept-Language": "en-US,en;q=0.8"}
-    url = "http://nominatim.openstreetmap.org/reverse?lat={}&lon={}&".format(
-        coords[1], coords[0]
-    )
-    url += "addressdetails=0&format=json&zoom=6&extratags=0"
-
-    response = json.loads(requests.get(url, headers=headers).text)
-
-    if "error" in response:
-        return "Unknown location, do you recognise it?"
-
-    return response["display_name"]
+from s2coastalbot.geoutils import get_location_name
 
 
 class S2CoastalBot:
