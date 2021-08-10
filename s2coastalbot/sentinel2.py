@@ -56,6 +56,7 @@ def download_tci_image(
         footprint,
         date=("NOW-6DAY", "NOW"),
         platformname="Sentinel-2",
+        producttype="S2MSI1C",
     )
 
     # convert to Pandas DataFrame
