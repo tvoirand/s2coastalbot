@@ -8,6 +8,8 @@ import argparse
 import configparser
 import json
 import requests
+import datetime
+import xml.etree.ElementTree as ET
 
 # third party imports
 from sentinelsat import SentinelAPI
@@ -36,13 +38,75 @@ def download_tci_image(
     """
 
     def find_tci_file(product_path):
-        """Look for TCI file within S2 product"""
+        """Look for TCI file within S2 product."""
         for path, dirs, files in os.walk(product_path):
             if path.endswith("IMG_DATA"):
                 for f in files:
                     if f.lower().endswith("_tci.jp2"):
                         return os.path.join(path, f)
         return None
+
+    def find_mtd_file(product_path):
+        """Look for MTD file within S2 product."""
+        for path, dirs, files in os.walk(product_path):
+            for f in files:
+                if f.lower().endswith("mtd_msil2a.xml"):
+                    return os.path.join(path, f)
+        return None
+
+    def read_nodata_pixel_percentage(mtd_file):
+        """Read nodata pixel percentage from L2A product metadata file."""
+        tree = ET.parse(mtd_file)
+        root = tree.getroot()
+        quality_indicators_info = root.find(
+            "{https://psd-14.sentinel2.eo.esa.int/PSD/User_Product_Level-2A.xsd}Quality_Indicators_Info"
+        )
+        image_content_qi = quality_indicators_info.find("Image_Content_QI")
+        nodata_pixel_percentage = float(
+            image_content_qi.find("NODATA_PIXEL_PERCENTAGE").text
+        )
+        return nodata_pixel_percentage
+
+    def read_nodata_from_l2a_prod(product_series):
+        """Read nodata pixels percentage in L2A product corresponding to a given L1C product."""
+
+        # read some product infos
+        tile_center = shapely.wkt.loads(product_row["footprint"]).centroid
+        acquisition_date = datetime.datetime.strptime(
+            product_row["title"].split("_")[2][:8], "%Y%m%d"
+        )
+
+        # find corresponding L2A product
+        l2a_product_row = api.to_dataframe(
+            api.query(
+                tile_center,
+                date=(
+                    acquisition_date,
+                    acquisition_date + datetime.timedelta(days=1),
+                ),
+                platformname="Sentinel-2",
+                producttype="S2MSI2A",
+            )
+        ).iloc[0]
+
+        # download L2A product metadata file
+        nodefilter = make_path_filter("*mtd_msil2a.xml")
+        l2a_product_info = products_api.download(
+            l2a_product_row["uuid"], directory_path=output_folder, nodefilter=nodefilter
+        )
+
+        # read metadata file to check nodata pixels percentage
+        l2a_safe_path = os.path.join(output_folder, l2a_product_info["node_path"][2:])
+        l2a_mtd_file = find_mtd_file(l2a_safe_path)
+        return read_nodata_pixel_percentage(l2a_mtd_file)
+
+    # create output folder if necessary
+    if output_folder is None:
+        output_folder = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "data"
+        )
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
 
     # connect to APIs
     api = SentinelAPI(copernicus_user, copernicus_password)
@@ -52,34 +116,35 @@ def download_tci_image(
     footprint = geojson_to_wkt(read_geojson(aoi_file))
 
     # search images
-    products = api.query(
-        footprint,
-        date=("NOW-6DAY", "NOW"),
-        platformname="Sentinel-2",
-        producttype="S2MSI1C",
+    products_df = api.to_dataframe(
+        api.query(
+            footprint,
+            date=("NOW-6DAY", "NOW"),
+            platformname="Sentinel-2",
+            producttype="S2MSI1C",
+        )
     )
 
-    # convert to Pandas DataFrame
-    products_df = api.to_dataframe(products)
-
-    # filter out products with coulds and randomly pick one product
+    # filter out products with clouds
     products_df = products_df[products_df["cloudcoverpercentage"] < 0.05]
 
-    # select image for which location is recognized by openstreetmap
+    # filter out products not recognized by openstreetmap or containing nodata pixels
     location_is_recognized = False
-    while not location_is_recognized:
+    tile_fully_covered = False
+    while not location_is_recognized or not tile_fully_covered:
+
+        # select a random image
         product_row = products_df.sample(n=1).iloc[0]
+
+        # check if image location is recognized by openstreetmap
         center_coords = shapely.wkt.loads(product_row["footprint"]).centroid.coords[0]
         if not get_location_name(center_coords) == "Unknown location":
             location_is_recognized = True
 
-    # create output folder if necessary
-    if output_folder is None:
-        output_folder = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "data"
-        )
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
+        # check if image contains nodata pixels (which probably means it will be on edge of swath)
+        nodata_pixel_percentage = read_nodata_from_l2a_prod(product_row)
+        if nodata_pixel_percentage == 0.0:
+            tile_fully_covered = True
 
     # download only TCI band
     nodefilter = make_path_filter("*_tci.jp2")

@@ -23,7 +23,7 @@ def postprocess_tci_image(input_file):
 
     # create some constants
     output_file = "{}_postprocessed.png".format(os.path.splitext(input_file)[0])
-    upscale_factor = 1/10
+    upscale_factor = 1 / 10
 
     # open input dataset
     with rasterio.open(input_file) as in_dataset:
@@ -40,19 +40,18 @@ def postprocess_tci_image(input_file):
                 height,
                 width,
             ),
-            resampling=Resampling.bilinear
+            resampling=Resampling.bilinear,
         )
 
         # scale image transform
         transform = in_dataset.transform * in_dataset.transform.scale(
-            (in_dataset.width / data.shape[-1]),
-            (in_dataset.height / data.shape[-2])
+            (in_dataset.width / data.shape[-1]), (in_dataset.height / data.shape[-2])
         )
 
     # edit histogram
     data = np.asarray(data, dtype=np.float32)
     data = data * 3
-    data[data>255] = 255
+    data[data > 255] = 255
     data = np.asarray(data, dtype=np.uint8)
 
     # write output dataset
