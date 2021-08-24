@@ -7,7 +7,6 @@ Twitter bot that posts newly acquired Sentinel-2 images of coastal areas.
 import os
 import argparse
 import configparser
-import logging
 
 # third party imports
 import tweepy
@@ -36,7 +35,10 @@ class S2CoastalBot:
         """
 
         # create logger
-        logger = get_custom_logger("s2coastalbot", logging.INFO)
+        log_file = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "logs", "s2coastalbot.log"
+        )
+        logger = get_custom_logger(log_file)
 
         # read config
         logger.info("Reading config")

@@ -21,6 +21,7 @@ import shapely.wkt
 
 # local project imports
 from s2coastalbot.geoutils import get_location_name
+from s2coastalbot.custom_logger import get_custom_logger
 
 
 def download_tci_image(
@@ -100,6 +101,12 @@ def download_tci_image(
         l2a_mtd_file = find_mtd_file(l2a_safe_path)
         return read_nodata_pixel_percentage(l2a_mtd_file)
 
+    # create logger
+    log_file = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "logs", "s2coastalbot.log"
+    )
+    logger = get_custom_logger(log_file)
+
     # create output folder if necessary
     if output_folder is None:
         output_folder = os.path.join(
@@ -135,15 +142,18 @@ def download_tci_image(
 
         # select a random image
         product_row = products_df.sample(n=1).iloc[0]
+        logger.info("Randomly selected product: {}".format(product_row["title"]))
 
         # check if image location is recognized by openstreetmap
         center_coords = shapely.wkt.loads(product_row["footprint"]).centroid.coords[0]
         if not get_location_name(center_coords) == "Unknown location":
+            logger.info("Location recognized")
             location_is_recognized = True
 
         # check if image contains nodata pixels (which probably means it will be on edge of swath)
         nodata_pixel_percentage = read_nodata_from_l2a_prod(product_row)
         if nodata_pixel_percentage == 0.0:
+            logger.info("Tile is fully covered (0% nodata pixels)")
             tile_fully_covered = True
 
     # download only TCI band

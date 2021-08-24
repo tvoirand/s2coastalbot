@@ -8,12 +8,12 @@ import logging
 from logging.handlers import RotatingFileHandler
 
 
-def get_custom_logger(project_name, level=20):
+def get_custom_logger(log_file, level=20):
     """Create logger with predefined config.
 
     Parameters
     ----------
-    project_name : str
+    log_file : str
     level : int
         use logging.DEBUG, logging.INFO, ... or 10, 20, ... respectively
 
@@ -23,11 +23,8 @@ def get_custom_logger(project_name, level=20):
     """
 
     # create some paths
-    logs_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "logs"
-    )
-    if not os.path.exists(logs_path):
-        os.makedirs(logs_path)
+    if not os.path.exists(os.path.dirname(log_file)):
+        os.makedirs(os.path.dirname(log_file))
 
     # create logger
     logger = logging.getLogger()
@@ -36,7 +33,7 @@ def get_custom_logger(project_name, level=20):
 
     # create file handler
     file_handler = RotatingFileHandler(  # redirect logs to rotating file
-        os.path.join(logs_path, "{}.log".format(project_name)),
+        log_file,
         maxBytes=1000000,
         backupCount=1,  # create new files when maxbytes reached
     )
