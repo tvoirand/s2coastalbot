@@ -103,7 +103,9 @@ def download_tci_image(
 
     # create logger
     log_file = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "logs", "s2coastalbot.log"
+        os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
+        "logs",
+        "s2coastalbot.log",
     )
     logger = get_custom_logger(log_file)
 
@@ -137,24 +139,26 @@ def download_tci_image(
 
     # filter out products not recognized by openstreetmap or containing nodata pixels
     location_is_recognized = False
-    tile_fully_covered = False
-    while not location_is_recognized or not tile_fully_covered:
+    tile_is_fully_covered = False
+    while not location_is_recognized or not tile_is_fully_covered:
 
         # select a random image
         product_row = products_df.sample(n=1).iloc[0]
         logger.info("Randomly selected product: {}".format(product_row["title"]))
 
         # check if image location is recognized by openstreetmap
+        location_is_recognized = False
         center_coords = shapely.wkt.loads(product_row["footprint"]).centroid.coords[0]
-        if not get_location_name(center_coords) == "Unknown location":
-            logger.info("Location recognized")
+        if get_location_name(center_coords) != "Unknown location":
+            logger.info("Location is recognized")
             location_is_recognized = True
 
-        # check if image contains nodata pixels (which probably means it will be on edge of swath)
-        nodata_pixel_percentage = read_nodata_from_l2a_prod(product_row)
-        if nodata_pixel_percentage == 0.0:
-            logger.info("Tile is fully covered (0% nodata pixels)")
-            tile_fully_covered = True
+            # check if image contains nodata pixels (which probably means it's on edge of swath)
+            tile_is_fully_covered = False
+            nodata_pixel_percentage = read_nodata_from_l2a_prod(product_row)
+            if nodata_pixel_percentage == 0.0:
+                logger.info("Tile is fully covered (0% nodata pixels)")
+                tile_is_fully_covered = True
 
     # download only TCI band
     nodefilter = make_path_filter("*_tci.jp2")
