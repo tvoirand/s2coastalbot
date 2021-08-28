@@ -25,7 +25,7 @@ from s2coastalbot.custom_logger import get_custom_logger
 
 
 def download_tci_image(
-    copernicus_user, copernicus_password, aoi_file, output_folder=None
+    copernicus_user, copernicus_password, aoi_file, output_folder=None, logger=None
 ):
     """
     Download a random recently acquired Sentinel-2 image.
@@ -33,6 +33,8 @@ def download_tci_image(
         -copernicus_user        str
         -copernicus_password    str
         -aoi_file               str
+        -output_folder          str or None
+        -logger                 logging.Logger or None
     Output:
         -tci_file_path          str
         -center_coords          (float, float)
@@ -101,13 +103,14 @@ def download_tci_image(
         l2a_mtd_file = find_mtd_file(l2a_safe_path)
         return read_nodata_pixel_percentage(l2a_mtd_file)
 
-    # create logger
-    log_file = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
-        "logs",
-        "s2coastalbot.log",
-    )
-    logger = get_custom_logger(log_file)
+    # create logger if necessary
+    if logger is None:
+        log_file = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
+            "logs",
+            "s2coastalbot.log",
+        )
+        logger = get_custom_logger(log_file)
 
     # create output folder if necessary
     if output_folder is None:
