@@ -14,6 +14,8 @@ dependencies = [
     "pandas",
     "shapely",
     "rasterio",
+    "fiona",
+    "pyproj",
 ]
 
 
