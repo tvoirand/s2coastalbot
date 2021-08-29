@@ -67,7 +67,7 @@ class S2CoastalBot:
 
         # postprocess image to fit twitter contraints
         logger.info("Postprocessing image")
-        postprocessed_file_path = postprocess_tci_image(tci_file_path, aoi_file)
+        postprocessed_file_path = postprocess_tci_image(tci_file_path, aoi_file, logger)
 
         # authenticate twitter account
         logger.info("Authenticating against twitter API")

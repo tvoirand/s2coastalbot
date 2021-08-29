@@ -16,6 +16,9 @@ from shapely.geometry import MultiLineString
 from shapely.geometry import Polygon
 import pyproj
 
+# local project imports
+from s2coastalbot.custom_logger import get_custom_logger
+
 
 # create some constants
 INPUT_MAX_SIZE = 10980
@@ -23,13 +26,14 @@ SUBSET_WIDTH = 1000
 SUBSET_HEIGHT = 1000
 
 
-def postprocess_tci_image(input_file, aoi_file):
+def postprocess_tci_image(input_file, aoi_file, logger=None):
     """
     Postprocess TCI image for s2coastalbot.
     Input:
         -input_file     str
         -aoi_file       str
             Geojson file containing polyline shapes
+        -logger         logging.Logger or None
     Output:
         -               str
             path to output file
@@ -55,6 +59,15 @@ def postprocess_tci_image(input_file, aoi_file):
             col_stop -= col_stop - max_width
         return row_start, row_stop, col_start, col_stop
 
+    # create logger if necessary
+    if logger is None:
+        log_file = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
+            "logs",
+            "s2coastalbot.log",
+        )
+        logger = get_custom_logger(log_file)
+
     # create some constants
     output_file = "{}_postprocessed.png".format(os.path.splitext(input_file)[0])
 
@@ -73,6 +86,7 @@ def postprocess_tci_image(input_file, aoi_file):
         footprint = Polygon(footprint)
 
         # locate image subset center among intersections with coastline
+        logger.info("Locating subset center among intersections with coastline")
         coastline_subsets = []
         with fiona.open(aoi_file, "r") as infile:
             for feat in infile:
@@ -85,6 +99,7 @@ def postprocess_tci_image(input_file, aoi_file):
                         for linestring in intersection:
                             coastline_subsets.append(linestring)
         center_coords = random.choice(random.choice(coastline_subsets).coords)
+        logger.info("Subset center (lat, lon): {:.4f} - {:.4f}".format(center_coords[0], center_coords[1]))
 
         # find subset center pixel
         latlon_to_utm = pyproj.Transformer.from_crs(4326, in_dataset.crs.to_epsg())
@@ -94,6 +109,7 @@ def postprocess_tci_image(input_file, aoi_file):
         )
 
         # find subset window
+        logger.info("Finding corresponding subset window")
         row_start, row_stop, col_start, col_stop = get_window(
             center_pixel, SUBSET_WIDTH, SUBSET_HEIGHT, INPUT_MAX_SIZE, INPUT_MAX_SIZE
         )
@@ -103,6 +119,7 @@ def postprocess_tci_image(input_file, aoi_file):
         array = in_dataset.read(window=window)
 
         # write subset to output file
+        logger.info("Writing subset output file")
         with rasterio.open(
             output_file,
             "w",
