@@ -35,8 +35,9 @@ def postprocess_tci_image(input_file, aoi_file, logger=None):
             Geojson file containing polyline shapes
         -logger         logging.Logger or None
     Output:
-        -               str
-            path to output file
+        -output_file    str
+        -center_coords  (float, float)
+            lon, lat
     """
 
     def get_window(center, subset_width, subset_height, max_width, max_height):
@@ -103,9 +104,9 @@ def postprocess_tci_image(input_file, aoi_file, logger=None):
 
         # find subset center pixel
         latlon_to_utm = pyproj.Transformer.from_crs(4326, in_dataset.crs.to_epsg())
-        center_coords = latlon_to_utm.transform(center_coords[1], center_coords[0])
+        center_coords_utm = latlon_to_utm.transform(center_coords[1], center_coords[0])
         center_pixel = rasterio.transform.rowcol(
-            in_dataset.transform, center_coords[0], center_coords[1]
+            in_dataset.transform, center_coords_utm[0], center_coords_utm[1]
         )
 
         # find subset window
@@ -133,4 +134,4 @@ def postprocess_tci_image(input_file, aoi_file, logger=None):
         ) as out_dataset:
             out_dataset.write(array)
 
-    return output_file
+    return output_file, (center_coords[1], center_coords[0])
