@@ -62,13 +62,13 @@ class S2CoastalBot:
 
         # download Sentinel-2 True Color Image
         logger.info("Downloading Sentinel-2 TCI image")
-        tci_file_path, center_coords, date = download_tci_image(
+        tci_file_path, tile_center_coords, date = download_tci_image(
             copernicus_user, copernicus_password, aoi_file, logger=logger
         )
 
         # postprocess image to fit twitter contraints
         logger.info("Postprocessing image")
-        postprocessed_file_path, center_coords = postprocess_tci_image(tci_file_path, aoi_file, logger)
+        postprocessed_file_path, subset_center_coords = postprocess_tci_image(tci_file_path, aoi_file, logger)
 
         # authenticate twitter account
         logger.info("Authenticating against twitter API")
@@ -78,9 +78,12 @@ class S2CoastalBot:
 
         # post tweet
         logger.info("Posting tweet")
+        location_name = get_location_name(subset_center_coords)
+        if location_name == "Unknown location":
+            location_name = get_location_name(tile_center_coords)
         status = "{} ({}) {}".format(
-            get_location_name(center_coords),
-            format_lat_lon(center_coords[1], center_coords[0]),
+            location_name,
+            format_lat_lon(subset_center_coords[1], subset_center_coords[0]),
             date.strftime("%Y %b %d, %H:%M UTC"),
         )
         api.update_with_media(
