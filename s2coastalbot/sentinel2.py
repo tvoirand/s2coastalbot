@@ -80,6 +80,7 @@ def download_tci_image(
         )
 
         # find corresponding L2A product
+        logger.info("Querying corresponding L2A product")
         l2a_product_row = api.to_dataframe(
             api.query(
                 tile_center,
@@ -128,6 +129,7 @@ def download_tci_image(
     footprint = geojson_to_wkt(read_geojson(aoi_file))
 
     # search images
+    logger.info("Initial Sentinel-2 products query")
     products_df = api.to_dataframe(
         api.query(
             footprint,
@@ -138,6 +140,7 @@ def download_tci_image(
     )
 
     # filter out products with clouds
+    logger.info("Filtering out products with clouds")
     products_df = products_df[products_df["cloudcoverpercentage"] < 0.05]
 
     # filter out products not recognized by openstreetmap or containing nodata pixels
