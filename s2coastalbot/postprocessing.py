@@ -11,7 +11,9 @@ import rasterio
 from rasterio.windows import Window
 import numpy as np
 import fiona
-from shapely.geometry import LineString, Polygon
+from shapely.geometry import LineString
+from shapely.geometry import MultiLineString
+from shapely.geometry import Polygon
 import pyproj
 
 
@@ -76,7 +78,12 @@ def postprocess_tci_image(input_file, aoi_file):
             for feat in infile:
                 line = LineString(feat["geometry"]["coordinates"])
                 if line.intersects(footprint):
-                    coastline_subsets.append(line.intersection(footprint))
+                    intersection = line.intersection(footprint)
+                    if type(intersection) == LineString:
+                        coastline_subsets.append(line.intersection(footprint))
+                    elif type(intersection) == MultiLineString:
+                        for linestring in intersection:
+                            coastline_subsets.append(linestring)
         center_coords = random.choice(random.choice(coastline_subsets).coords)
 
         # find subset center pixel
