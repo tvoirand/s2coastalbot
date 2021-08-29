@@ -22,7 +22,7 @@ from s2coastalbot.sentinel2 import download_tci_image
 from s2coastalbot.postprocessing import postprocess_tci_image
 from s2coastalbot.custom_logger import get_custom_logger
 from s2coastalbot.geoutils import get_location_name
-from s2coastalbot.geoutils import format_lat_lon
+from s2coastalbot.geoutils import format_lon_lat
 
 
 class S2CoastalBot:
@@ -83,7 +83,7 @@ class S2CoastalBot:
             location_name = get_location_name(tile_center_coords)
         status = "{} ({}) {}".format(
             location_name,
-            format_lat_lon(subset_center_coords[1], subset_center_coords[0]),
+            format_lon_lat(subset_center_coords),
             date.strftime("%Y %b %d, %H:%M UTC"),
         )
         api.update_with_media(

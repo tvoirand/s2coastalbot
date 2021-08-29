@@ -7,7 +7,16 @@ import json
 import requests
 
 
-def format_lat_lon(lat, lon):
+def format_lon_lat(coords):
+    """
+    Convert latitude and longitude into an address using OSM
+    Input:
+        -coords     (float, float)
+            lon, lat
+    Output:
+        -s          str
+    """
+    lon, lat = coords
     s = ""
     if lat < 0:
         s += "%.1f°S" % abs(lat)

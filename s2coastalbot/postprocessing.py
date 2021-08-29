@@ -100,7 +100,7 @@ def postprocess_tci_image(input_file, aoi_file, logger=None):
                         for linestring in intersection:
                             coastline_subsets.append(linestring)
         center_coords = random.choice(random.choice(coastline_subsets).coords)
-        logger.info("Subset center (lat, lon): {:.4f} - {:.4f}".format(center_coords[0], center_coords[1]))
+        logger.info("Subset center (lon, lat): {:.4f} - {:.4f}".format(center_coords[0], center_coords[1]))
 
         # find subset center pixel
         latlon_to_utm = pyproj.Transformer.from_crs(4326, in_dataset.crs.to_epsg())
@@ -134,4 +134,4 @@ def postprocess_tci_image(input_file, aoi_file, logger=None):
         ) as out_dataset:
             out_dataset.write(array)
 
-    return output_file, (center_coords[1], center_coords[0])
+    return output_file, center_coords
