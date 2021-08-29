@@ -7,6 +7,23 @@ import json
 import requests
 
 
+def format_lat_lon(lat, lon):
+    s = ""
+    if lat < 0:
+        s += "%.1f°S" % abs(lat)
+    else:
+        s += "%.1f°N" % abs(lat)
+
+    s += " "
+
+    if lon < 0:
+        s += "%.1f°W" % abs(lon)
+    else:
+        s += "%.1f°E" % abs(lon)
+
+    return s
+
+
 def get_location_name(coords):
     """
     Convert latitude and longitude into an address using OSM

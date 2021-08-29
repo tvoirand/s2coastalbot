@@ -22,6 +22,7 @@ from s2coastalbot.sentinel2 import download_tci_image
 from s2coastalbot.postprocessing import postprocess_tci_image
 from s2coastalbot.custom_logger import get_custom_logger
 from s2coastalbot.geoutils import get_location_name
+from s2coastalbot.geoutils import format_lat_lon
 
 
 class S2CoastalBot:
@@ -61,7 +62,7 @@ class S2CoastalBot:
 
         # download Sentinel-2 True Color Image
         logger.info("Downloading Sentinel-2 TCI image")
-        tci_file_path, center_coords = download_tci_image(
+        tci_file_path, center_coords, date = download_tci_image(
             copernicus_user, copernicus_password, aoi_file, logger=logger
         )
 
@@ -77,8 +78,13 @@ class S2CoastalBot:
 
         # post tweet
         logger.info("Posting tweet")
+        status = "{} ({}) {}".format(
+            get_location_name(center_coords),
+            format_lat_lon(center_coords[1], center_coords[0]),
+            date.strftime("%Y %b %d, %H:%M UTC"),
+        )
         api.update_with_media(
-            filename=postprocessed_file_path, status=get_location_name(center_coords)
+            filename=postprocessed_file_path, status=status
         )
 
 

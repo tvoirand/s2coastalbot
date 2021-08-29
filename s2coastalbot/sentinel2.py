@@ -38,6 +38,7 @@ def download_tci_image(
     Output:
         -tci_file_path          str
         -center_coords          (float, float)
+        -                       datetime.datetime
     """
 
     def find_tci_file(product_path):
@@ -179,4 +180,4 @@ def download_tci_image(
     safe_path = os.path.join(output_folder, product_info["node_path"][2:])
     tci_file_path = find_tci_file(safe_path)
 
-    return tci_file_path, center_coords
+    return tci_file_path, center_coords, product_info["date"]
