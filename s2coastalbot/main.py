@@ -84,7 +84,7 @@ class S2CoastalBot:
         status = "{} ({}) {}".format(
             location_name,
             format_lon_lat(subset_center_coords),
-            date.strftime("%Y %b %d, %H:%M UTC"),
+            date.strftime("%Y %b %d"),
         )
         api.update_with_media(
             filename=postprocessed_file_path, status=status
