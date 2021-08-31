@@ -5,6 +5,7 @@ Twitter bot that posts newly acquired Sentinel-2 images of coastal areas.
 
 # standard imports
 import os
+import shutil
 import argparse
 import configparser
 
@@ -55,6 +56,7 @@ class S2CoastalBot:
         copernicus_user = config.get("access", "copernicus_user")
         copernicus_password = config.get("access", "copernicus_password")
         aoi_file = config.get("misc", "aoi_file")
+        cleaning = config.get("misc", "cleaning").lower() in ["true", "yes", "t", "y"]
         consumer_key = config.get("access", "consumer_key")
         consumer_secret = config.get("access", "consumer_secret")
         access_token = config.get("access", "access_token")
@@ -68,7 +70,9 @@ class S2CoastalBot:
 
         # postprocess image to fit twitter contraints
         logger.info("Postprocessing image")
-        postprocessed_file_path, subset_center_coords = postprocess_tci_image(tci_file_path, aoi_file, logger)
+        postprocessed_file_path, subset_center_coords = postprocess_tci_image(
+            tci_file_path, aoi_file, logger
+        )
 
         # authenticate twitter account
         logger.info("Authenticating against twitter API")
@@ -86,9 +90,17 @@ class S2CoastalBot:
             format_lon_lat(subset_center_coords),
             date.strftime("%Y %b %d"),
         )
-        api.update_with_media(
-            filename=postprocessed_file_path, status=status
-        )
+        api.update_with_media(filename=postprocessed_file_path, status=status)
+
+        # clean data if necessary
+        if cleaning:
+            logger.info("Cleaning data")
+            product_path = os.path.dirname(
+                os.path.dirname(
+                    os.path.dirname(os.path.dirname(postprocessed_file_path))
+                )
+            )
+            shutil.rmtree(product_path)
 
 
 if __name__ == "__main__":
