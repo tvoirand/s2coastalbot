@@ -75,9 +75,9 @@ def download_tci_image(
         """Read nodata pixels percentage in L2A product corresponding to a given L1C product."""
 
         # read some product infos
-        tile_center = shapely.wkt.loads(product_row["footprint"]).centroid
+        tile_center = shapely.wkt.loads(product_series["footprint"]).centroid
         acquisition_date = datetime.datetime.strptime(
-            product_row["title"].split("_")[2][:8], "%Y%m%d"
+            product_series["title"].split("_")[2][:8], "%Y%m%d"
         )
 
         # find corresponding L2A product
