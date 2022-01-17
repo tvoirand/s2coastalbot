@@ -42,16 +42,15 @@ def download_tci_image(
     """
 
     def find_tci_file(product_path):
-        """Look for TCI file within S2 product."""
+        """Look for TCI file within S2 L2A product."""
         for path, dirs, files in os.walk(product_path):
-            if path.endswith("IMG_DATA"):
-                for f in files:
-                    if f.lower().endswith("_tci.jp2"):
-                        return os.path.join(path, f)
+            for f in files:
+                if f.lower().endswith("_tci_10m.jp2"):
+                    return os.path.join(path, f)
         return None
 
     def find_mtd_file(product_path):
-        """Look for MTD file within S2 product."""
+        """Look for MTD file within S2 L2A product."""
         for path, dirs, files in os.walk(product_path):
             for f in files:
                 if f.lower().endswith("mtd_msil2a.xml"):
@@ -71,37 +70,17 @@ def download_tci_image(
         )
         return nodata_pixel_percentage
 
-    def read_nodata_from_l2a_prod(product_series):
-        """Read nodata pixels percentage in L2A product corresponding to a given L1C product."""
-
-        # read some product infos
-        tile_center = shapely.wkt.loads(product_series["footprint"]).centroid
-        acquisition_date = datetime.datetime.strptime(
-            product_series["title"].split("_")[2][:8], "%Y%m%d"
-        )
-
-        # find corresponding L2A product
-        logger.info("Querying corresponding L2A product")
-        l2a_product_row = api.to_dataframe(
-            api.query(
-                tile_center,
-                date=(
-                    acquisition_date,
-                    acquisition_date + datetime.timedelta(days=1),
-                ),
-                platformname="Sentinel-2",
-                producttype="S2MSI2A",
-            )
-        ).iloc[0]
+    def read_nodata_from_l2a_prod(product_series, output_folder):
+        """Read nodata pixels percentage in L2A product."""
 
         # download L2A product metadata file
         nodefilter = make_path_filter("*mtd_msil2a.xml")
-        l2a_product_info = products_api.download(
-            l2a_product_row["uuid"], directory_path=output_folder, nodefilter=nodefilter
+        products_api.download(
+            product_series["uuid"], directory_path=output_folder, nodefilter=nodefilter
         )
 
         # read metadata file to check nodata pixels percentage
-        l2a_safe_path = os.path.join(output_folder, l2a_product_info["node_path"][2:])
+        l2a_safe_path = os.path.join(output_folder, product_series["filename"])
         l2a_mtd_file = find_mtd_file(l2a_safe_path)
         return read_nodata_pixel_percentage(l2a_mtd_file)
 
@@ -134,9 +113,9 @@ def download_tci_image(
     products_df = api.to_dataframe(
         api.query(
             footprint,
-            date=("NOW-6DAY", "NOW"),
+            date=("NOW-10DAY", "NOW"),
             platformname="Sentinel-2",
-            producttype="S2MSI1C",
+            producttype="S2MSI2A",
         )
     )
 
@@ -156,19 +135,23 @@ def download_tci_image(
         # check if image location is recognized by openstreetmap
         location_is_recognized = False
         center_coords = shapely.wkt.loads(product_row["footprint"]).centroid.coords[0]
-        if get_location_name(center_coords) != "Unknown location":
+        if get_location_name(center_coords) == "Unknown location":
+            logger.info("Location not recognized")
+        else:
             logger.info("Location is recognized")
             location_is_recognized = True
 
             # check if image contains nodata pixels (which probably means it's on edge of swath)
             tile_is_fully_covered = False
-            nodata_pixel_percentage = read_nodata_from_l2a_prod(product_row)
-            if nodata_pixel_percentage == 0.0:
+            nodata_pixel_percentage = read_nodata_from_l2a_prod(product_row, output_folder)
+            if nodata_pixel_percentage != 0.0:
+                logger.info("Tile contains nodata")
+            else:
                 logger.info("Tile is fully covered (0% nodata pixels)")
                 tile_is_fully_covered = True
 
     # download only TCI band
-    nodefilter = make_path_filter("*_tci.jp2")
+    nodefilter = make_path_filter("*_tci_10m.jp2")
     product_info = products_api.download(
         product_row["uuid"], directory_path=output_folder, nodefilter=nodefilter
     )
@@ -177,7 +160,7 @@ def download_tci_image(
     center_coords = shapely.wkt.loads(product_info["footprint"]).centroid.coords[0]
 
     # find tci file path
-    safe_path = os.path.join(output_folder, product_info["node_path"][2:])
+    safe_path = os.path.join(output_folder, product_row["filename"])
     tci_file_path = find_tci_file(safe_path)
 
     return tci_file_path, center_coords, product_info["date"]
