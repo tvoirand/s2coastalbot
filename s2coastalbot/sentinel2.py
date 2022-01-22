@@ -37,7 +37,6 @@ def download_tci_image(
         -logger                 logging.Logger or None
     Output:
         -tci_file_path          str
-        -center_coords          (float, float)
         -                       datetime.datetime
     """
 
@@ -124,31 +123,21 @@ def download_tci_image(
     products_df = products_df[products_df["cloudcoverpercentage"] < 0.05]
 
     # filter out products not recognized by openstreetmap or containing nodata pixels
-    location_is_recognized = False
     tile_is_fully_covered = False
-    while not location_is_recognized or not tile_is_fully_covered:
+    while not tile_is_fully_covered:
 
         # select a random image
         product_row = products_df.sample(n=1).iloc[0]
         logger.info("Randomly selected product: {}".format(product_row["title"]))
 
-        # check if image location is recognized by openstreetmap
-        location_is_recognized = False
-        center_coords = shapely.wkt.loads(product_row["footprint"]).centroid.coords[0]
-        if get_location_name(center_coords) == "Unknown location":
-            logger.info("Location not recognized")
+        # check if image contains nodata pixels (which probably means it's on edge of swath)
+        tile_is_fully_covered = False
+        nodata_pixel_percentage = read_nodata_from_l2a_prod(product_row, output_folder)
+        if nodata_pixel_percentage != 0.0:
+            logger.info("Tile contains nodata")
         else:
-            logger.info("Location is recognized")
-            location_is_recognized = True
-
-            # check if image contains nodata pixels (which probably means it's on edge of swath)
-            tile_is_fully_covered = False
-            nodata_pixel_percentage = read_nodata_from_l2a_prod(product_row, output_folder)
-            if nodata_pixel_percentage != 0.0:
-                logger.info("Tile contains nodata")
-            else:
-                logger.info("Tile is fully covered (0% nodata pixels)")
-                tile_is_fully_covered = True
+            logger.info("Tile is fully covered (0% nodata pixels)")
+            tile_is_fully_covered = True
 
     # download only TCI band
     nodefilter = make_path_filter("*_tci_10m.jp2")
@@ -156,11 +145,8 @@ def download_tci_image(
         product_row["uuid"], directory_path=output_folder, nodefilter=nodefilter
     )
 
-    # get center lat lon
-    center_coords = shapely.wkt.loads(product_info["footprint"]).centroid.coords[0]
-
     # find tci file path
     safe_path = os.path.join(output_folder, product_row["filename"])
     tci_file_path = find_tci_file(safe_path)
 
-    return tci_file_path, center_coords, product_info["date"]
+    return tci_file_path, product_info["date"]

@@ -64,7 +64,7 @@ class S2CoastalBot:
 
         # download Sentinel-2 True Color Image
         logger.info("Downloading Sentinel-2 TCI image")
-        tci_file_path, tile_center_coords, date = download_tci_image(
+        tci_file_path, date = download_tci_image(
             copernicus_user, copernicus_password, aoi_file, logger=logger
         )
 
@@ -83,8 +83,6 @@ class S2CoastalBot:
         # post tweet
         logger.info("Posting tweet")
         location_name = get_location_name(subset_center_coords)
-        if location_name == "Unknown location":
-            location_name = get_location_name(tile_center_coords)
         status = "{} ({}) {}".format(
             location_name,
             format_lon_lat(subset_center_coords),
