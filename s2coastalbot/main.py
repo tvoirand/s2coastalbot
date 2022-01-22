@@ -55,7 +55,8 @@ class S2CoastalBot:
         config.read(config_file)
         copernicus_user = config.get("access", "copernicus_user")
         copernicus_password = config.get("access", "copernicus_password")
-        aoi_file = config.get("misc", "aoi_file")
+        aoi_file_downloading = config.get("misc", "aoi_file_downloading")
+        aoi_file_postprocessing = config.get("misc", "aoi_file_postprocessing")
         cleaning = config.get("misc", "cleaning").lower() in ["true", "yes", "t", "y"]
         consumer_key = config.get("access", "consumer_key")
         consumer_secret = config.get("access", "consumer_secret")
@@ -65,13 +66,13 @@ class S2CoastalBot:
         # download Sentinel-2 True Color Image
         logger.info("Downloading Sentinel-2 TCI image")
         tci_file_path, date = download_tci_image(
-            copernicus_user, copernicus_password, aoi_file, logger=logger
+            copernicus_user, copernicus_password, aoi_file_downloading, logger=logger
         )
 
         # postprocess image to fit twitter contraints
         logger.info("Postprocessing image")
         postprocessed_file_path, subset_center_coords = postprocess_tci_image(
-            tci_file_path, aoi_file, logger
+            tci_file_path, aoi_file_postprocessing, logger
         )
 
         # authenticate twitter account
