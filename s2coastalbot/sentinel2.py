@@ -165,9 +165,10 @@ def download_tci_image(
     products_df = api.to_dataframe(
         api.query(
             footprint,
-            date=("NOW-5DAY", "NOW"),
+            date=("NOW-10DAY", "NOW"),
             platformname="Sentinel-2",
             producttype="S2MSI2A",
+            area_relation="IsWithin",
         )
     )
 

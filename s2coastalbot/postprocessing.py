@@ -4,6 +4,7 @@ Image postprocessing module for s2coastalbot.
 
 # standard imports
 import os
+import sys
 import random
 
 # third party imports
@@ -111,6 +112,12 @@ def postprocess_tci_image(input_file, aoi_file, logger=None):
                     elif type(intersection) == MultiLineString:
                         for linestring in intersection:
                             coastline_subsets.append(linestring)
+
+        # raise error if there are no intersection with coastline
+        if coastline_subsets == []:
+            logger.error("No intersection with coastline found")
+            sys.exit(128)
+
         center_coords = random.choice(random.choice(coastline_subsets).coords)
         logger.info(
             "Subset center (lon, lat): {:.4f} - {:.4f}".format(
