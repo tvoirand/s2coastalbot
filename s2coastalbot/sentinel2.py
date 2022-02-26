@@ -11,6 +11,7 @@ import requests
 import datetime
 import xml.etree.ElementTree as ET
 import random
+from time import sleep
 
 # third party imports
 from sentinelsat import SentinelAPI
@@ -67,24 +68,60 @@ def download_tci_image(
             "{https://psd-14.sentinel2.eo.esa.int/PSD/User_Product_Level-2A.xsd}Quality_Indicators_Info"
         )
         image_content_qi = quality_indicators_info.find("Image_Content_QI")
-        nodata_pixel_percentage = float(
-            image_content_qi.find("NODATA_PIXEL_PERCENTAGE").text
-        )
+        nodata_pixel_percentage = float(image_content_qi.find("NODATA_PIXEL_PERCENTAGE").text)
         return nodata_pixel_percentage
 
-    def read_nodata_from_l2a_prod(product_series, output_folder):
+    def read_nodata_from_l2a_prod(product_series, output_folder, products_api, logger):
         """Read nodata pixels percentage in L2A product."""
 
         # download L2A product metadata file
         nodefilter = make_path_filter("*mtd_msil2a.xml")
-        products_api.download(
-            product_series["uuid"], directory_path=output_folder, nodefilter=nodefilter
+        sentinelsat_retry_download(
+            products_api,
+            product_series["uuid"],
+            output_folder,
+            nodefilter,
+            logger,
         )
 
         # read metadata file to check nodata pixels percentage
         l2a_safe_path = os.path.join(output_folder, product_series["filename"])
         l2a_mtd_file = find_mtd_file(l2a_safe_path)
         return read_nodata_pixel_percentage(l2a_mtd_file)
+
+    def sentinelsat_retry_download(api, uuid, output_folder, nodefilter, logger):
+        """Download product with sentinelsat api with retry and backoff."""
+
+        # initiate sleep time
+        sleep_time = 2
+
+        # limit to 5 tries
+        for retry_nb in range(5):
+
+            try:
+                product_info = api.download(
+                    uuid, directory_path=output_folder, nodefilter=nodefilter
+                )
+                error_str = None
+
+            except Exception as error:
+                error_str = error
+                logger.error(
+                    "Failed sentinelsat download after {} retries, waiting {} seconds".format(
+                        retry_nb, sleep_time
+                    )
+                )
+                logger.error(error_str)
+                pass
+
+            # wait for some given time and increase time at each retry
+            if error_str:
+                sleep(sleep_time)
+                sleep_time *= 2
+
+            # leave retry loop in case of success
+            else:
+                return product_info
 
     # create logger if necessary
     if logger is None:
@@ -113,7 +150,7 @@ def download_tci_image(
         for feat in infile:
             footprint.append(feat["geometry"]["coordinates"])
     random.shuffle(footprint)
-    footprint = MultiPoint(footprint[:50]).wkt # select only 50 tiles to limit search string length
+    footprint = MultiPoint(footprint[:50]).wkt  # select only 50 tiles to limit search string length
 
     # search images
     logger.info("Initial Sentinel-2 products query")
@@ -140,7 +177,12 @@ def download_tci_image(
 
         # check if product contains nodata pixels (which probably means it's on edge of swath)
         tile_is_fully_covered = False
-        nodata_pixel_percentage = read_nodata_from_l2a_prod(product_row, output_folder)
+        nodata_pixel_percentage = read_nodata_from_l2a_prod(
+            product_row,
+            output_folder,
+            products_api,
+            logger,
+        )
         if nodata_pixel_percentage != 0.0:
             logger.info("Tile contains nodata")
         else:
@@ -149,8 +191,8 @@ def download_tci_image(
 
     # download only TCI band
     nodefilter = make_path_filter("*_tci_10m.jp2")
-    product_info = products_api.download(
-        product_row["uuid"], directory_path=output_folder, nodefilter=nodefilter
+    product_info = sentinelsat_retry_download(
+        products_api, product_row["uuid"], output_folder, nodefilter, logger
     )
 
     # find tci file path
