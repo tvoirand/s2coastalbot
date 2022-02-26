@@ -10,6 +10,7 @@ import json
 import requests
 import datetime
 import xml.etree.ElementTree as ET
+import random
 
 # third party imports
 from sentinelsat import SentinelAPI
@@ -17,6 +18,8 @@ from sentinelsat import SentinelProductsAPI
 from sentinelsat import make_path_filter
 from sentinelsat import read_geojson
 from sentinelsat import geojson_to_wkt
+import fiona
+from shapely.geometry import MultiPoint
 import shapely.wkt
 
 # local project imports
@@ -105,14 +108,19 @@ def download_tci_image(
     products_api = SentinelProductsAPI(copernicus_user, copernicus_password)
 
     # read footprint
-    footprint = geojson_to_wkt(read_geojson(aoi_file))
+    footprint = []
+    with fiona.open(aoi_file, "r") as infile:
+        for feat in infile:
+            footprint.append(feat["geometry"]["coordinates"])
+    random.shuffle(footprint)
+    footprint = MultiPoint(footprint[:50]).wkt # select only 50 tiles to limit search string length
 
     # search images
     logger.info("Initial Sentinel-2 products query")
     products_df = api.to_dataframe(
         api.query(
             footprint,
-            date=("NOW-10DAY", "NOW"),
+            date=("NOW-5DAY", "NOW"),
             platformname="Sentinel-2",
             producttype="S2MSI2A",
         )
@@ -122,15 +130,15 @@ def download_tci_image(
     logger.info("Filtering out products with clouds")
     products_df = products_df[products_df["cloudcoverpercentage"] < 0.05]
 
-    # filter out products not recognized by openstreetmap or containing nodata pixels
+    # filter out products containing nodata pixels
     tile_is_fully_covered = False
     while not tile_is_fully_covered:
 
-        # select a random image
+        # select a random product
         product_row = products_df.sample(n=1).iloc[0]
         logger.info("Randomly selected product: {}".format(product_row["title"]))
 
-        # check if image contains nodata pixels (which probably means it's on edge of swath)
+        # check if product contains nodata pixels (which probably means it's on edge of swath)
         tile_is_fully_covered = False
         nodata_pixel_percentage = read_nodata_from_l2a_prod(product_row, output_folder)
         if nodata_pixel_percentage != 0.0:
