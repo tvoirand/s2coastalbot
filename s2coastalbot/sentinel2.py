@@ -157,46 +157,48 @@ def download_tci_image(
     with fiona.open(aoi_file, "r") as infile:
         for feat in infile:
             footprint.append(feat["geometry"]["coordinates"])
-    random.shuffle(footprint)
-    footprint = MultiPoint(footprint[:50]).wkt  # select only 50 tiles to limit search string length
 
-    # search images
-    logger.info("Initial Sentinel-2 products query")
-    products_df = api.to_dataframe(
-        api.query(
-            footprint,
-            date=("NOW-10DAY", "NOW"),
-            platformname="Sentinel-2",
-            producttype="S2MSI2A",
-            area_relation="IsWithin",
+    # search for suitable product
+    found_suitable_product = False
+    while not found_suitable_product:
+
+        # shuffle the list of tiles to query
+        random.shuffle(footprint)
+
+        # search images
+        logger.info("Querying Sentinel-2 products")
+        products_df = api.to_dataframe(
+            api.query(
+                MultiPoint(footprint[:50]).wkt,  # only 50 tiles to limit search string length
+                date=("NOW-10DAY", "NOW"),
+                platformname="Sentinel-2",
+                producttype="S2MSI2A",
+                area_relation="IsWithin",
+            )
         )
-    )
 
-    # filter out products with clouds
-    logger.info("Filtering out products with clouds")
-    products_df = products_df[products_df["cloudcoverpercentage"] < 0.05]
+        # filter out products with clouds
+        logger.info("Filtering out products with clouds")
+        products_df = products_df[products_df["cloudcoverpercentage"] < 0.05]
 
-    # filter out products containing nodata pixels
-    tile_is_fully_covered = False
-    while not tile_is_fully_covered:
+        # select a product that is fully covered (no nodata pixels)
+        for i, product_row in products_df.iterrows():
 
-        # select a random product
-        product_row = products_df.sample(n=1).iloc[0]
-        logger.info("Randomly selected product: {}".format(product_row["title"]))
+            logger.info("Checking nodata for product: {}".format(product_row["title"]))
 
-        # check if product contains nodata pixels (which probably means it's on edge of swath)
-        tile_is_fully_covered = False
-        nodata_pixel_percentage = read_nodata_from_l2a_prod(
-            product_row,
-            output_folder,
-            products_api,
-            logger,
-        )
-        if nodata_pixel_percentage != 0.0:
-            logger.info("Tile contains nodata")
-        else:
-            logger.info("Tile is fully covered (0% nodata pixels)")
-            tile_is_fully_covered = True
+            # check if product contains nodata pixels (which probably means it's on edge of swath)
+            nodata_pixel_percentage = read_nodata_from_l2a_prod(
+                product_row,
+                output_folder,
+                products_api,
+                logger,
+            )
+            if nodata_pixel_percentage != 0.0:
+                logger.info("Tile contains nodata")
+            else:
+                logger.info("Tile is fully covered (0% nodata pixels)")
+                found_suitable_product = True
+                break
 
     # download only TCI band
     nodefilter = make_path_filter("*_tci_10m.jp2")
