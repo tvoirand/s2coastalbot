@@ -174,12 +174,9 @@ def download_tci_image(
                 platformname="Sentinel-2",
                 producttype="S2MSI2A",
                 area_relation="IsWithin",
+                cloudcoverpercentage=(0, 5),
             )
         )
-
-        # filter out products with clouds
-        logger.info("Filtering out products with clouds")
-        products_df = products_df[products_df["cloudcoverpercentage"] < 0.05]
 
         # select a product that is fully covered (no nodata pixels)
         for i, product_row in products_df.iterrows():
