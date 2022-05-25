@@ -60,11 +60,19 @@ def read_nodata_pixel_percentage(mtd_file):
 
 
 def read_nodata_from_l2a_prod(product_series, output_folder, products_api, logger):
-    """Read nodata pixels percentage in L2A product."""
+    """Read nodata pixels percentage in L2A product.
+    Input:
+        -product_series     pd.Series
+        -output_folder      str
+        -products_api       SentinelProductsAPI
+        -logger             logging.Logger
+    Output:
+        -                   float or None
+    """
 
     # download L2A product metadata file
     nodefilter = make_path_filter("*mtd_msil2a.xml")
-    sentinelsat_retry_download(
+    product_info = sentinelsat_retry_download(
         products_api,
         product_series["uuid"],
         output_folder,
@@ -72,19 +80,31 @@ def read_nodata_from_l2a_prod(product_series, output_folder, products_api, logge
         logger,
     )
 
-    # read metadata file to check nodata pixels percentage
-    l2a_safe_path = os.path.join(output_folder, product_series["filename"])
-    l2a_mtd_file = find_mtd_file(l2a_safe_path)
-    return read_nodata_pixel_percentage(l2a_mtd_file)
+    if product_info is None:
+        return None
+    else:
+        # read metadata file to check nodata pixels percentage
+        l2a_safe_path = os.path.join(output_folder, product_series["filename"])
+        l2a_mtd_file = find_mtd_file(l2a_safe_path)
+        return read_nodata_pixel_percentage(l2a_mtd_file)
 
 
 def sentinelsat_retry_download(api, uuid, output_folder, nodefilter, logger):
-    """Download product with sentinelsat api with retry and backoff."""
+    """Download product with sentinelsat api with retry and backoff.
+    Input:
+        -api            SentinelAPI or SentinelProductsAPI
+        -uuid           str
+        -output_folder  str
+        -nodefilter     nodefilter function
+        -logger         logging.Logger
+    Output:
+        -               dict or None
+    """
 
     # initiate sleep time
     sleep_time = 2
 
-    # limit to 5 tries
+    # limit to 10 tries
     for retry_nb in range(10):
 
         try:
@@ -111,8 +131,8 @@ def sentinelsat_retry_download(api, uuid, output_folder, nodefilter, logger):
             return product_info
 
     # report failure after too many retries
-    logger.error("Failed sentinelsat download stopped processing")
-    sys.exit(128)
+    logger.error("Backing off sentinelsat download after 10 failures")
+    return None
 
 
 def download_tci_image(
@@ -190,8 +210,8 @@ def download_tci_image(
                 products_api,
                 logger,
             )
-            if nodata_pixel_percentage != 0.0:
-                logger.info("Tile contains nodata")
+            if nodata_pixel_percentage != 0.0 or nodata_pixel_percentage is None:
+                logger.info("Tile contains nodata or metadata download failure")
             else:
                 logger.info("Tile is fully covered (0% nodata pixels)")
                 found_suitable_product = True
@@ -203,8 +223,13 @@ def download_tci_image(
         products_api, product_row["uuid"], output_folder, nodefilter, logger
     )
 
-    # find tci file path
-    safe_path = os.path.join(output_folder, product_row["filename"])
-    tci_file_path = find_tci_file(safe_path)
+    if product_info is None:
+        logger.error("Failed sentinelsat download stopped processing")
+        sys.exit(128)
 
-    return tci_file_path, product_info["date"]
+    else:
+        # find tci file path
+        safe_path = os.path.join(output_folder, product_row["filename"])
+        tci_file_path = find_tci_file(safe_path)
+
+        return tci_file_path, product_info["date"]
