@@ -23,8 +23,7 @@ from s2coastalbot.custom_logger import get_custom_logger
 
 # create some constants
 INPUT_MAX_SIZE = 10980
-SUBSET_WIDTH = 1000
-SUBSET_HEIGHT = 1000
+SUBSET_SIZE = 1000
 
 
 def postprocess_tci_image(input_file, aoi_file, logger=None):
@@ -48,14 +47,14 @@ def postprocess_tci_image(input_file, aoi_file, logger=None):
         col_start = center[1] - int(subset_width / 2)
         col_stop = center[1] + int(subset_width / 2)
         if row_start < 0:
-            row_start += -row_start
             row_stop += -row_start
+            row_start += -row_start
         if row_stop > max_height:
             row_start -= row_stop - max_height
             row_stop -= row_stop - max_height
         if col_start < 0:
-            col_start += -col_start
             col_stop += -col_start
+            col_start += -col_start
         if col_stop > max_width:
             col_start -= col_stop - max_width
             col_stop -= col_stop - max_width
@@ -120,9 +119,7 @@ def postprocess_tci_image(input_file, aoi_file, logger=None):
 
         center_coords = random.choice(random.choice(coastline_subsets).coords)
         logger.info(
-            "Subset center (lon, lat): {:.4f} - {:.4f}".format(
-                center_coords[0], center_coords[1]
-            )
+            "Subset center (lon, lat): {:.4f} - {:.4f}".format(center_coords[0], center_coords[1])
         )
 
         # find subset center pixel
@@ -135,7 +132,7 @@ def postprocess_tci_image(input_file, aoi_file, logger=None):
         # find subset window
         logger.info("Finding corresponding subset window")
         row_start, row_stop, col_start, col_stop = get_window(
-            center_pixel, SUBSET_WIDTH, SUBSET_HEIGHT, INPUT_MAX_SIZE, INPUT_MAX_SIZE
+            center_pixel, SUBSET_SIZE, SUBSET_SIZE, INPUT_MAX_SIZE, INPUT_MAX_SIZE
         )
         window = Window.from_slices((row_start, row_stop), (col_start, col_stop))
 
@@ -153,8 +150,8 @@ def postprocess_tci_image(input_file, aoi_file, logger=None):
             "w",
             driver="PNG",
             count=in_dataset.count,
-            height=SUBSET_HEIGHT,
-            width=SUBSET_WIDTH,
+            height=SUBSET_SIZE,
+            width=SUBSET_SIZE,
             dtype=np.uint8,
             transform=in_dataset.window_transform(window),
             crs=in_dataset.crs,
