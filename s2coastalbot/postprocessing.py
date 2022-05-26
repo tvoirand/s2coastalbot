@@ -139,10 +139,6 @@ def postprocess_tci_image(input_file, aoi_file, logger=None):
         # read subset of TCI image
         array = in_dataset.read(window=window)
 
-        # increase brightness
-        array = translate(array, 0, 90, 0, 255)
-        array[array>255] = 255
-
         # write subset to output file
         logger.info("Writing subset output file")
         with rasterio.open(
