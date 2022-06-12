@@ -169,8 +169,10 @@ def download_tci_image(
         os.makedirs(output_folder)
 
     # connect to APIs
-    api = SentinelAPI(copernicus_user, copernicus_password)
-    products_api = SentinelProductsAPI(copernicus_user, copernicus_password)
+    api = SentinelAPI(copernicus_user, copernicus_password, api_url="https://colhub.met.no")
+    products_api = SentinelProductsAPI(
+        copernicus_user, copernicus_password, api_url="https://colhub.met.no"
+    )
 
     # read footprint
     footprint = []
