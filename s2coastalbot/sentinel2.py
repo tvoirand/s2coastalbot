@@ -104,8 +104,8 @@ def sentinelsat_retry_download(api, uuid, output_folder, nodefilter, logger):
     # initiate sleep time
     sleep_time = 2
 
-    # limit to 10 tries
-    for retry_nb in range(10):
+    # limit to 9 tries
+    for retry_nb in range(9):
 
         try:
             product_info = api.download(uuid, directory_path=output_folder, nodefilter=nodefilter)
