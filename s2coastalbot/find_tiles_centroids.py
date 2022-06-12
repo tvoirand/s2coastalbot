@@ -47,7 +47,7 @@ def find_tiles_centroids(tiles_shp, coastline_shp, output_file, log_file=None):
     with fiona.open(tiles_shp, "r") as infile:
         for i, feat in enumerate(infile):
             if log_file is not None:
-                logger.info("Processing tile {} of {}".format(i+1, len(infile)))
+                logger.info("Processing tile {} of {}".format(i + 1, len(infile)))
             tile_name = feat["properties"]["Name"]
             tile_polygon = Polygon(feat["geometry"]["coordinates"][0])
 

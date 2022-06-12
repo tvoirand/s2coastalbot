@@ -95,9 +95,7 @@ class S2CoastalBot:
         if cleaning:
             logger.info("Cleaning data")
             product_path = os.path.dirname(
-                os.path.dirname(
-                    os.path.dirname(os.path.dirname(postprocessed_file_path))
-                )
+                os.path.dirname(os.path.dirname(os.path.dirname(postprocessed_file_path)))
             )
             shutil.rmtree(product_path)
 

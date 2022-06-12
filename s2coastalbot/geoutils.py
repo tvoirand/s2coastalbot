@@ -57,12 +57,12 @@ def get_location_name(input_coords):
     while "error" in response and count < 1000:
 
         # while location unknown, keep looking in growing circles
-        if count % 10 == 1: # increase circle radius every 10 points
+        if count % 10 == 1:  # increase circle radius every 10 points
 
             # create larger circle and pick 10 points on the circle
             radius += 0.1
             circle = Point(input_coords).buffer(radius).exterior.coords
-            points += circle[::len(circle)//9]
+            points += circle[:: len(circle) // 9]
 
         # get coords where location name is requested from OSM
         coords = points[count]
