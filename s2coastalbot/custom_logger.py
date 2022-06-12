@@ -6,7 +6,10 @@ Custom logging module with predefined config.
 import os
 import logging
 from logging.handlers import RotatingFileHandler
+import socket
 
+APP_NAME = "s2coastalbot"
+APP_VERSION = "0.3"
 
 def get_custom_logger(log_file, level=20):
     """Create logger with predefined config.
@@ -29,7 +32,14 @@ def get_custom_logger(log_file, level=20):
     # create logger
     logger = logging.getLogger()
     logger.setLevel(level)
-    formatter = logging.Formatter("%(asctime)s :: %(levelname)s :: %(message)s")
+    formatter = logging.Formatter(
+        fmt="%(asctime)s.%(msecs)03d {} {} {} [%(process)d]: [%(levelname).1s] %(message)s".format(
+            socket.gethostname(),
+            APP_NAME,
+            APP_VERSION,
+        ),
+        datefmt="%Y-%m-%dT%H:%M:%S",
+    )
 
     # create file handler
     file_handler = RotatingFileHandler(  # redirect logs to rotating file
