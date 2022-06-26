@@ -3,7 +3,6 @@ Script to find centroids of S2 tiles intersected by world coastline.
 """
 
 # standard imports
-import os
 import argparse
 
 # third party imports

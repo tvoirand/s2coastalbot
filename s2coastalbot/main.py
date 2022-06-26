@@ -6,17 +6,10 @@ Twitter bot that posts newly acquired Sentinel-2 images of coastal areas.
 # standard imports
 import os
 import shutil
-import argparse
 import configparser
 
 # third party imports
 import tweepy
-from sentinelsat import SentinelAPI
-from sentinelsat import SentinelProductsAPI
-from sentinelsat import make_path_filter
-from sentinelsat import read_geojson
-from sentinelsat import geojson_to_wkt
-import pandas as pd
 
 # local project imports
 from s2coastalbot.sentinel2 import download_tci_image

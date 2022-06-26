@@ -5,10 +5,6 @@ Sentinel-2 data handling module for s2coastalbot.
 # standard imports
 import os
 import sys
-import argparse
-import configparser
-import json
-import requests
 import datetime
 import xml.etree.ElementTree as ET
 import random
@@ -18,15 +14,12 @@ from time import sleep
 from sentinelsat import SentinelAPI
 from sentinelsat import SentinelProductsAPI
 from sentinelsat import make_path_filter
-from sentinelsat import read_geojson
-from sentinelsat import geojson_to_wkt
 import fiona
 from shapely.geometry import MultiPoint
 import shapely.wkt
 import pandas as pd
 
 # local project imports
-from s2coastalbot.geoutils import get_location_name
 from s2coastalbot.custom_logger import get_custom_logger
 
 
