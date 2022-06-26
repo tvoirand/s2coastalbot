@@ -23,6 +23,7 @@ from sentinelsat import geojson_to_wkt
 import fiona
 from shapely.geometry import MultiPoint
 import shapely.wkt
+import pandas as pd
 
 # local project imports
 from s2coastalbot.geoutils import get_location_name
@@ -180,6 +181,17 @@ def download_tci_image(
         for feat in infile:
             footprint.append(feat["geometry"]["coordinates"])
 
+    # read list of already downloaded images
+    downloaded_images_file = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
+        "data",
+        "downloaded_images.csv",
+    )
+    if not os.path.exists(downloaded_images_file):  # initiate file if necessary
+        downloaded_images = pd.DataFrame(columns=["date", "product"])
+    else:
+        downloaded_images = pd.read_csv(downloaded_images_file)
+
     # search for suitable product
     found_suitable_product = False
     while not found_suitable_product:
@@ -192,7 +204,7 @@ def download_tci_image(
         products_df = api.to_dataframe(
             api.query(
                 MultiPoint(footprint[:50]).wkt,  # only 50 tiles to limit search string length
-                date=("NOW-10DAY", "NOW"),
+                date=("NOW-3DAY", "NOW"),
                 platformname="Sentinel-2",
                 producttype="S2MSI2A",
                 area_relation="IsWithin",
@@ -201,7 +213,11 @@ def download_tci_image(
         )
 
         # select a product that is fully covered (no nodata pixels)
-        for i, product_row in products_df.iterrows():
+        for i, product_row in [
+            (i, p)
+            for (i, p) in products_df.iterrows()
+            if not p["title"] in downloaded_images["product"]
+        ]:
 
             logger.info("Checking nodata for product: {}".format(product_row["title"]))
 
@@ -230,6 +246,14 @@ def download_tci_image(
         sys.exit(128)
 
     else:
+
+        # update list of downloaded images
+        downloaded_images.loc[len(downloaded_images)] = [
+            datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+            product_row["title"],
+        ]
+        downloaded_images.to_csv(downloaded_images_file, index=False)
+
         # find tci file path
         safe_path = os.path.join(output_folder, product_row["filename"])
         tci_file_path = find_tci_file(safe_path)
