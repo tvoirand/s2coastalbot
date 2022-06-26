@@ -192,7 +192,7 @@ def download_tci_image(
         products_df = api.to_dataframe(
             api.query(
                 MultiPoint(footprint[:50]).wkt,  # only 50 tiles to limit search string length
-                date=("NOW-10DAY", "NOW"),
+                date=("NOW-3DAY", "NOW"),
                 platformname="Sentinel-2",
                 producttype="S2MSI2A",
                 area_relation="IsWithin",
