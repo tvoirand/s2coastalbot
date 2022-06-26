@@ -5,6 +5,7 @@ Sentinel-2 data handling module for s2coastalbot.
 # standard imports
 import os
 import sys
+import shutil
 import datetime
 import xml.etree.ElementTree as ET
 import random
@@ -130,7 +131,7 @@ def sentinelsat_retry_download(api, uuid, output_folder, nodefilter, logger):
 
 
 def download_tci_image(
-    copernicus_user, copernicus_password, aoi_file, output_folder=None, logger=None
+    copernicus_user, copernicus_password, aoi_file, output_folder=None, cleaning=True, logger=None
 ):
     """
     Download a random recently acquired Sentinel-2 image.
@@ -139,6 +140,7 @@ def download_tci_image(
         -copernicus_password    str
         -aoi_file               str
         -output_folder          str or None
+        -cleaning               bool
         -logger                 logging.Logger or None
     Output:
         -tci_file_path          str
@@ -168,12 +170,6 @@ def download_tci_image(
         copernicus_user, copernicus_password, api_url="https://colhub.met.no"
     )
 
-    # read footprint
-    footprint = []
-    with fiona.open(aoi_file, "r") as infile:
-        for feat in infile:
-            footprint.append(feat["geometry"]["coordinates"])
-
     # read list of already downloaded images
     downloaded_images_file = os.path.join(
         os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
@@ -185,18 +181,27 @@ def download_tci_image(
     else:
         downloaded_images = pd.read_csv(downloaded_images_file)
 
-    # search for suitable product
-    found_suitable_product = False
-    while not found_suitable_product:
+    # read footprint
+    footprint = []
+    with fiona.open(aoi_file, "r") as infile:
+        for feat in infile:
+            footprint.append(feat["geometry"]["coordinates"])
+    random.shuffle(footprint)
 
-        # shuffle the list of tiles to query
-        random.shuffle(footprint)
+    # search for suitable product
+    count = 0
+    found_suitable_product = False
+    while not found_suitable_product and count + 1 < len(footprint) / 50:
+
+        # use 50 tiles sliding window to query products on all footprint
+        footprint_subset = footprint[count * 50 : (count + 1) * 50]
+        count += 1
 
         # search images
         logger.info("Querying Sentinel-2 products")
         products_df = api.to_dataframe(
             api.query(
-                MultiPoint(footprint[:50]).wkt,  # only 50 tiles to limit search string length
+                MultiPoint(footprint_subset).wkt,
                 date=("NOW-3DAY", "NOW"),
                 platformname="Sentinel-2",
                 producttype="S2MSI2A",
@@ -223,10 +228,16 @@ def download_tci_image(
             )
             if nodata_pixel_percentage != 0.0 or nodata_pixel_percentage is None:
                 logger.info("Tile contains nodata or metadata download failure")
+                if cleaning:
+                    shutil.rmtree(os.path.join(output_folder, product_row["filename"]))
             else:
                 logger.info("Tile is fully covered (0% nodata pixels)")
                 found_suitable_product = True
                 break
+
+    if not found_suitable_product: # case where while loop above didn't generate suitable product
+        logger.error("No suitable product found in any tile within the footprint")
+        sys.exit(128)
 
     # download only TCI band
     nodefilter = make_path_filter("*_tci_10m.jp2")

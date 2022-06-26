@@ -59,7 +59,11 @@ class S2CoastalBot:
         # download Sentinel-2 True Color Image
         logger.info("Downloading Sentinel-2 TCI image")
         tci_file_path, date = download_tci_image(
-            copernicus_user, copernicus_password, aoi_file_downloading, logger=logger
+            copernicus_user,
+            copernicus_password,
+            aoi_file_downloading,
+            cleaning=cleaning,
+            logger=logger,
         )
 
         # postprocess image to fit twitter contraints
