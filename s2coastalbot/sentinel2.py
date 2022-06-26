@@ -209,7 +209,7 @@ def download_tci_image(
         for i, product_row in [
             (i, p)
             for (i, p) in products_df.iterrows()
-            if not p["title"] in downloaded_images["product"]
+            if not p["title"] in downloaded_images["product"].to_list()
         ]:
 
             logger.info("Checking nodata for product: {}".format(product_row["title"]))
