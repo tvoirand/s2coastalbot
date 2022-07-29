@@ -1,8 +1,10 @@
 # s2coastalbot
 
-Twitter bot that posts newly acquired Sentinel-2 images of coastal areas.
+[S2coastalbot](https://twitter.com/s2coastalbot) is a twitter bot that posts Sentinel-2 images acquired recently over coastal areas.
 
-Heavily inspired from sentinel2-bot.
+Inspired from [Sentinel2Bot](https://twitter.com/Sentinel2Bot) and [LandsatBot](https://twitter.com/LandsatBot).
+
+Described in more details on [this page](https://thibautvoirand.com/s2coastalbot/).
 
 ### Installation
 
@@ -15,10 +17,7 @@ $ pip intall -e .
 
 ### TODO
 
-* Add exceptions and retries for downloading
-* Add logs
-* Improve postprocessing
-    * Improve histograms
-    * Subset instead of downsampling image
-* Download only full size images (and not images on edge of swath)
-* Add data folder cleaning routine
+* [ ] Improve list of coastal tiles by using coastline vector file more precise than the [Natural Earth file](https://www.naturalearthdata.com/downloads/10m-physical-vectors/10m-coastline/)
+* [ ] Store selection criteria (time range, cloud cover) in config file
+* [ ] Add specific tweet for when no image satisfying selection criteria (AOI, time range, cloud cover) was found
+* [ ] Use atmospheric correction algorithm specific to the coastal environment instead of level 2 TCI image
