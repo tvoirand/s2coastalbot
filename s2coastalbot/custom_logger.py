@@ -9,7 +9,7 @@ from logging.handlers import RotatingFileHandler
 import socket
 
 APP_NAME = "s2coastalbot"
-APP_VERSION = "0.4.1"
+APP_VERSION = "0.5"
 
 
 def get_custom_logger(log_file, level=20):
