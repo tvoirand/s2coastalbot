@@ -202,11 +202,11 @@ def download_tci_image(
         products_df = api.to_dataframe(
             api.query(
                 MultiPoint(footprint_subset).wkt,
-                date=("NOW-3DAY", "NOW"),
+                date=("NOW-6DAY", "NOW"),
                 platformname="Sentinel-2",
                 producttype="S2MSI2A",
                 area_relation="IsWithin",
-                cloudcoverpercentage=(0, 5),
+                cloudcoverpercentage=(0, 15),
             )
         )
 
