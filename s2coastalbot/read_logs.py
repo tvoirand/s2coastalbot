@@ -28,26 +28,27 @@ def read_logs(log_file):
     with open(log_file, "r") as infile:
 
         # initiate some loop variables
-        processes_count = 0
         current_pid = infile.readline().split()[4][1:-2]
         message = ""
 
         for line in infile.readlines():
 
             # read process id
-            pid = line.split()[4][1:-2]
+            try:
+                pid = line.split()[4][1:-2]
+            except IndexError:
+                continue
 
             if (
                 pid != current_pid
             ):  # in case of new process, store infos from previous line
-                logs.loc[processes_count] = [
+                logs.loc[len(logs)] = [
                     datetime.datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%f"),
                     current_pid,
                     level,
                     message,
                 ]
                 current_pid = pid
-                processes_count += 1
 
             date_str = line.split()[0]
             level = line.split()[5][1:-1]
