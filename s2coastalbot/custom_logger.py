@@ -46,7 +46,7 @@ def get_custom_logger(log_file, level=20):
     file_handler = RotatingFileHandler(  # redirect logs to rotating file
         log_file,
         maxBytes=1000000,
-        backupCount=1,  # create new files when maxbytes reached
+        backupCount=100,  # create new files when maxbytes reached (up to 100 * 1 MB files)
     )
     file_handler.setLevel(level)
     file_handler.setFormatter(formatter)
