@@ -131,21 +131,27 @@ def sentinelsat_retry_download(api, uuid, output_folder, nodefilter, logger):
 
 
 def download_tci_image(
-    copernicus_user, copernicus_password, aoi_file, output_folder=None, cleaning=True, logger=None
+    config, output_folder=None, logger=None
 ):
     """
     Download a random recently acquired Sentinel-2 image.
     Input:
-        -copernicus_user        str
-        -copernicus_password    str
-        -aoi_file               str
+        -config                 configparser.ConfigParser
+            contains:
+                access: copernicus_user, copernicus_password
+                misc: aoi_file_downloading, cleaning
         -output_folder          str or None
-        -cleaning               bool
         -logger                 logging.Logger or None
     Output:
         -tci_file_path          str
         -                       datetime.datetime
     """
+
+    # read config
+    copernicus_user = config.get("access", "copernicus_user")
+    copernicus_password = config.get("access", "copernicus_password")
+    aoi_file = config.get("misc", "aoi_file_downloading")
+    cleaning = config.get("misc", "cleaning")
 
     # create logger if necessary
     if logger is None:
