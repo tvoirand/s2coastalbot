@@ -152,6 +152,8 @@ def download_tci_image(
     copernicus_password = config.get("access", "copernicus_password")
     aoi_file = config.get("misc", "aoi_file_downloading")
     cleaning = config.get("misc", "cleaning")
+    cloud_cover_max = config.get("search", "cloud_cover_max")
+    timerange = config.get("search", "timerange")
 
     # create logger if necessary
     if logger is None:
@@ -208,11 +210,11 @@ def download_tci_image(
         products_df = api.to_dataframe(
             api.query(
                 MultiPoint(footprint_subset).wkt,
-                date=("NOW-6DAY", "NOW"),
+                date=("NOW-{}DAY".format(timerange), "NOW"),
                 platformname="Sentinel-2",
                 producttype="S2MSI2A",
                 area_relation="IsWithin",
-                cloudcoverpercentage=(0, 15),
+                cloudcoverpercentage=(0, cloud_cover_max),
             )
         )
 
