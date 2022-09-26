@@ -18,6 +18,5 @@ $ pip intall -e .
 ### TODO
 
 * [ ] Improve list of coastal tiles by using coastline vector file more precise than the [Natural Earth file](https://www.naturalearthdata.com/downloads/10m-physical-vectors/10m-coastline/)
-* [ ] Store selection criteria (time range, cloud cover) in config file
 * [ ] Add specific tweet for when no image satisfying selection criteria (AOI, time range, cloud cover) was found
 * [ ] Use atmospheric correction algorithm specific to the coastal environment instead of level 2 TCI image
