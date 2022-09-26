@@ -46,9 +46,6 @@ class S2CoastalBot:
         )
         config = configparser.ConfigParser()
         config.read(config_file)
-        copernicus_user = config.get("access", "copernicus_user")
-        copernicus_password = config.get("access", "copernicus_password")
-        aoi_file_downloading = config.get("misc", "aoi_file_downloading")
         aoi_file_postprocessing = config.get("misc", "aoi_file_postprocessing")
         cleaning = config.get("misc", "cleaning").lower() in ["true", "yes", "t", "y"]
         consumer_key = config.get("access", "consumer_key")
@@ -59,10 +56,7 @@ class S2CoastalBot:
         # download Sentinel-2 True Color Image
         logger.info("Downloading Sentinel-2 TCI image")
         tci_file_path, date = download_tci_image(
-            copernicus_user,
-            copernicus_password,
-            aoi_file_downloading,
-            cleaning=cleaning,
+            config,
             logger=logger,
         )
 
