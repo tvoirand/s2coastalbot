@@ -13,24 +13,59 @@ import pandas as pd
 # current project imports
 
 
-def read_logs(log_file):
-    """Read s2coastalbot logs.
+def read_logs_folder(logs_folder):
+    """Read s2coastalbot logs stored in the logs folder.
+
+    Assumes that logs are stored in a rotating file, named *.log, *.log.1, *.log.2 etc, with
+    highest number for oldest log file.
+
+    Parameters
+    ----------
+    logs_folder : Path
+
+    Returns
+    -------
+    logs_df : pd.DataFrame
+    """
+
+    log_files = sorted([f for f in logs_folder.iterdir() if ".log" in f.name], reverse=True)
+
+    # read each log file so as to include processes that are spread across several logs files
+    logs_df, last_process_start = read_log_file(log_files[0])
+    for log_file in log_files[1:]:
+        logs_df, last_process_start = read_log_file(log_file, logs_df, last_process_start)
+
+    return logs_df
+
+
+def read_log_file(log_file, logs_df=None, start_time=None):
+    """Read s2coastalbot logs from one given log file.
 
     Parameters
     ----------
     log_file : Path
+    logs_df : pd.DataFrame or None
+    start_time : datetime.datetime or None
+
+    Returns
+    -------
+    logs_df : pd.DataFrame
+    start_time : datetime.datetime
+        starting time of the last process logged in this file
     """
 
     # initiate logs dataframe
-    logs = pd.DataFrame(columns=["date", "pid", "time_spent", "level", "message"])
+    if logs_df is None:
+        logs_df = pd.DataFrame(columns=["date", "pid", "time_spent", "level", "message"])
 
     # read log file
     with open(log_file, "r") as infile:
 
         # initiate some loop variables
         first_line = infile.readline()
-        start_time = datetime.datetime.strptime(first_line.split()[0], "%Y-%m-%dT%H:%M:%S.%f")
         current_pid = first_line.split()[4][1:-2]
+        if start_time is None:
+            start_time = datetime.datetime.strptime(first_line.split()[0], "%Y-%m-%dT%H:%M:%S.%f")
         message = ""
 
         for line in infile.readlines():
@@ -41,11 +76,9 @@ def read_logs(log_file):
             except IndexError:
                 continue
 
-            if (
-                pid != current_pid
-            ):  # in case of new process, store infos from previous line
+            if pid != current_pid:  # in case of new process, store infos from previous line
                 end_time = datetime.datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%f")
-                logs.loc[len(logs)] = [
+                logs_df.loc[len(logs_df)] = [
                     end_time,
                     current_pid,
                     (end_time - start_time).seconds / 60,
@@ -59,13 +92,15 @@ def read_logs(log_file):
             level = line.split()[5][1:-1]
             message = " ".join(line.split()[6:])
 
-    print(logs)
+    return logs_df, start_time
 
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input_file")
+    parser.add_argument("-lf", "--logs_folder")
     args = parser.parse_args()
 
-    read_logs(Path(args.input_file))
+    logs_df = read_logs_folder(Path(args.logs_folder))
+
+    print(logs_df)
