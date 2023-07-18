@@ -70,17 +70,24 @@ class S2CoastalBot:
         logger.info("Authenticating against twitter API")
         auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
         auth.set_access_token(access_token, access_token_secret)
-        api = tweepy.API(auth)
+        apiv1 = tweepy.API(auth) # API v1.1 required to upload media
+        apiv2 = tweepy.Client( # API v2 required to post tweets
+            consumer_key=consumer_key,
+            consumer_secret=consumer_secret,
+            access_token=access_token,
+            access_token_secret=access_token_secret,
+        )
 
         # post tweet
         logger.info("Posting tweet")
         location_name = get_location_name(subset_center_coords)
-        status = "{} ({}) {}".format(
+        text = "{} ({}) {}".format(
             location_name,
             format_lon_lat(subset_center_coords),
             date.strftime("%Y %b %d"),
         )
-        api.update_with_media(filename=postprocessed_file_path, status=status)
+        media = apiv1.media_upload(filename=postprocessed_file_path)
+        apiv2.create_tweet(text=text, media_ids=[media.media_id], user_auth=True)
 
         # clean data if necessary
         if cleaning:
