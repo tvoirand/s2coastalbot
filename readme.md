@@ -4,7 +4,7 @@
 
 Inspired from [Sentinel2Bot](https://twitter.com/Sentinel2Bot) and [LandsatBot](https://twitter.com/LandsatBot).
 
-Described in more details on [this page](https://thibautvoirand.com/s2coastalbot/).
+Described in more details on [thibautvoirand.com/s2coastalbot](https://thibautvoirand.com/s2coastalbot/).
 
 ### Installation
 
