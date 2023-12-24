@@ -66,7 +66,7 @@ def read_nodata_from_l2a_prod(product_series, output_folder, products_api, logge
     """
 
     # download L2A product metadata file
-    nodefilter = make_path_filter("*mtd_msil2a.xml")
+    nodefilter = make_path_filter("*MTD_MSIL2A.xml")
     product_info = sentinelsat_retry_download(
         products_api,
         product_series["uuid"],
@@ -248,7 +248,7 @@ def download_tci_image(
         sys.exit(128)
 
     # download only TCI band
-    nodefilter = make_path_filter("*_tci_10m.jp2")
+    nodefilter = make_path_filter("*_TCI_10m.jp2")
     product_info = sentinelsat_retry_download(
         products_api, product_row["uuid"], output_folder, nodefilter, logger
     )
