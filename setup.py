@@ -21,7 +21,7 @@ dependencies = [
 
 setup(
     name="s2coastalbot",
-    version="0.7",
+    version="0.8",
     packages=find_packages(exclude=["tests"]),
     install_requires=dependencies,
 )
