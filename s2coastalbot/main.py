@@ -68,7 +68,8 @@ class S2CoastalBot:
             date.strftime("%Y %b %d"),
         )
 
-        # authenticate to Mastodon API
+        # authenticate against Mastodon API
+        logger.info("Authenticating against Mastodon API")
         mastodon_email = config.get("access", "mastodon_login_email")
         mastodon_password = config.get("access", "mastodon_password")
         mastodon_client_id = config.get("access", "mastodon_client_id")
@@ -83,6 +84,7 @@ class S2CoastalBot:
         )
 
         # post toot
+        logger.info("Posting toot")
         media_dict = mastodon.media_post(media_file=postprocessed_file_path)
         mastodon.status_post(
             status=text,
