@@ -46,12 +46,6 @@ class S2CoastalBot:
         )
         config = configparser.ConfigParser()
         config.read(config_file)
-        aoi_file_postprocessing = config.get("misc", "aoi_file_postprocessing")
-        cleaning = config.get("misc", "cleaning").lower() in ["true", "yes", "t", "y"]
-        consumer_key = config.get("access", "consumer_key")
-        consumer_secret = config.get("access", "consumer_secret")
-        access_token = config.get("access", "access_token")
-        access_token_secret = config.get("access", "access_token_secret")
 
         # download Sentinel-2 True Color Image
         logger.info("Downloading Sentinel-2 TCI image")
@@ -62,20 +56,25 @@ class S2CoastalBot:
 
         # postprocess image to fit twitter contraints
         logger.info("Postprocessing image")
+        aoi_file_postprocessing = config.get("misc", "aoi_file_postprocessing")
         postprocessed_file_path, subset_center_coords = postprocess_tci_image(
             tci_file_path, aoi_file_postprocessing, logger
         )
 
         # authenticate twitter account
         logger.info("Authenticating against twitter API")
-        auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-        auth.set_access_token(access_token, access_token_secret)
+        twitter_key = config.get("access", "twitter_consumer_key")
+        twitter_secret = config.get("access", "twitter_consumer_secret")
+        twitter_token = config.get("access", "twitter_access_token")
+        twitter_token_secret = config.get("access", "twitter_access_token_secret")
+        auth = tweepy.OAuthHandler(twitter_key, twitter_secret)
+        auth.set_access_token(twitter_token, twitter_token_secret)
         apiv1 = tweepy.API(auth)  # API v1.1 required to upload media
         apiv2 = tweepy.Client(  # API v2 required to post tweets
-            consumer_key=consumer_key,
-            consumer_secret=consumer_secret,
-            access_token=access_token,
-            access_token_secret=access_token_secret,
+            consumer_key=twitter_key,
+            consumer_secret=twitter_secret,
+            access_token=twitter_token,
+            access_token_secret=twitter_token_secret,
         )
 
         # post tweet
@@ -90,6 +89,7 @@ class S2CoastalBot:
         apiv2.create_tweet(text=text, media_ids=[media.media_id], user_auth=True)
 
         # clean data if necessary
+        cleaning = config.get("misc", "cleaning").lower() in ["true", "yes", "t", "y"]
         if cleaning:
             logger.info("Cleaning data")
             product_path = os.path.dirname(
