@@ -1,0 +1,7 @@
+tweepy
+sentinelsat @ git+https://github.com/tvoirand/sentinelsat@dev_thib
+pandas
+shapely
+rasterio
+fiona
+pyproj
