@@ -2,11 +2,11 @@
 Custom logging module with predefined config.
 """
 
-# standard imports
-import os
+# standard library
 import logging
-from logging.handlers import RotatingFileHandler
+import os
 import socket
+from logging.handlers import RotatingFileHandler
 
 APP_NAME = "s2coastalbot"
 APP_VERSION = "0.8"

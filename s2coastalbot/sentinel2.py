@@ -2,25 +2,24 @@
 Sentinel-2 data handling module for s2coastalbot.
 """
 
-# standard imports
-import os
-import sys
-import shutil
+# standard library
 import datetime
-import xml.etree.ElementTree as ET
+import os
 import random
+import shutil
+import sys
+import xml.etree.ElementTree as ET
 from time import sleep
 
-# third party imports
+# third party
+import fiona
+import pandas as pd
 from sentinelsat import SentinelAPI
 from sentinelsat import SentinelProductsAPI
 from sentinelsat import make_path_filter
-import fiona
 from shapely.geometry import MultiPoint
-import shapely.wkt
-import pandas as pd
 
-# local project imports
+# current project
 from s2coastalbot.custom_logger import get_custom_logger
 
 
@@ -130,9 +129,7 @@ def sentinelsat_retry_download(api, uuid, output_folder, nodefilter, logger):
     return None
 
 
-def download_tci_image(
-    config, output_folder=None, logger=None
-):
+def download_tci_image(config, output_folder=None, logger=None):
     """
     Download a random recently acquired Sentinel-2 image.
     Input:
@@ -202,7 +199,7 @@ def download_tci_image(
     while not found_suitable_product and count + 1 < len(footprint) / 50:
 
         # use 50 tiles sliding window to query products on all footprint
-        footprint_subset = footprint[count * 50 : (count + 1) * 50]
+        footprint_subset = footprint[count * 50 : (count + 1) * 50]  # noqa E203
         count += 1
 
         # search images
@@ -243,7 +240,7 @@ def download_tci_image(
                 found_suitable_product = True
                 break
 
-    if not found_suitable_product: # case where while loop above didn't generate suitable product
+    if not found_suitable_product:  # case where while loop above didn't generate suitable product
         logger.error("No suitable product found in any tile within the footprint")
         sys.exit(128)
 

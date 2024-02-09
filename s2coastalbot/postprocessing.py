@@ -2,24 +2,23 @@
 Image postprocessing module for s2coastalbot.
 """
 
-# standard imports
+# standard library
 import os
-import sys
 import random
+import sys
 
-# third party imports
+# third party
+import fiona
+import numpy as np
+import pyproj
 import rasterio
 from rasterio.windows import Window
-import numpy as np
-import fiona
 from shapely.geometry import LineString
 from shapely.geometry import MultiLineString
 from shapely.geometry import Polygon
-import pyproj
 
-# local project imports
+# current project
 from s2coastalbot.custom_logger import get_custom_logger
-
 
 # create some constants
 INPUT_MAX_SIZE = 10980

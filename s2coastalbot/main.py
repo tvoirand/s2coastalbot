@@ -3,20 +3,20 @@ s2coastalbot main script.
 Twitter bot that posts newly acquired Sentinel-2 images of coastal areas.
 """
 
-# standard imports
+# standard library
+import configparser
 import os
 import shutil
-import configparser
 
-# third party imports
+# third party
 import tweepy
 
-# local project imports
-from s2coastalbot.sentinel2 import download_tci_image
-from s2coastalbot.postprocessing import postprocess_tci_image
+# current project
 from s2coastalbot.custom_logger import get_custom_logger
-from s2coastalbot.geoutils import get_location_name
 from s2coastalbot.geoutils import format_lon_lat
+from s2coastalbot.geoutils import get_location_name
+from s2coastalbot.postprocessing import postprocess_tci_image
+from s2coastalbot.sentinel2 import download_tci_image
 
 
 class S2CoastalBot:

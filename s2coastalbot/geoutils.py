@@ -2,13 +2,12 @@
 Geoutils module for s2coastalbot project.
 """
 
-# standard imports
+# standard library
 import json
-import requests
 
-# third party imports
+# third party
+import requests
 from shapely.geometry import Point
-from pprint import pprint
 
 
 def format_lon_lat(coords):

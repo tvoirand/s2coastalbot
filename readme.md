@@ -8,12 +8,9 @@ Described in more details on [thibautvoirand.com/s2coastalbot](https://thibautvo
 
 ### Installation
 
-```bash
-$ conda create -n s2coastalbot python=3
-$ conda activate s2coastalbot
-$ cd /path/to/s2coastalbot/where/setup.py/is
-$ pip intall -e .
-```
+For example using pip:
+1. Install requirements: `pip install -r requirements.txt`
+2. Install project package in development mode: `pip install -e .`
 
 ### TODO
 

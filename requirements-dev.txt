@@ -1,0 +1,13 @@
+pytest
+flake8
+black
+pre-commit
+isort
+commitizen
+tweepy
+sentinelsat @ git+https://github.com/tvoirand/sentinelsat@dev_thib
+pandas
+shapely
+rasterio
+fiona
+pyproj
