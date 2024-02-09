@@ -10,6 +10,7 @@ import shutil
 
 # third party
 import tweepy
+from mastodon import Mastodon
 
 # current project
 from s2coastalbot.custom_logger import get_custom_logger
@@ -60,6 +61,34 @@ class S2CoastalBot:
         postprocessed_file_path, subset_center_coords = postprocess_tci_image(
             tci_file_path, aoi_file_postprocessing, logger
         )
+        location_name = get_location_name(subset_center_coords)
+        text = "{} ({}) {}".format(
+            location_name,
+            format_lon_lat(subset_center_coords),
+            date.strftime("%Y %b %d"),
+        )
+
+        # authenticate to Mastodon API
+        mastodon_email = config.get("access", "mastodon_login_email")
+        mastodon_password = config.get("access", "mastodon_password")
+        mastodon_client_id = config.get("access", "mastodon_client_id")
+        mastodon_client_secret = config.get("access", "mastodon_client_secret")
+        mastodon_base_url = config.get("access", "mastodon_base_url")
+        mastodon_secret_file = config.get("access", "mastodon_secret_file")
+        mastodon = Mastodon(client_id=mastodon_client_id, client_secret=mastodon_client_secret, api_base_url=mastodon_base_url)
+        mastodon.log_in(
+            mastodon_email,
+            mastodon_password,
+            to_file=mastodon_secret_file,
+        )
+
+        # post toot
+        media_dict = mastodon.media_post(media_file=postprocessed_file_path)
+        mastodon.status_post(
+            status=text,
+            media_ids=[media_dict["id"]],
+            visibility="public",
+        )
 
         # authenticate twitter account
         logger.info("Authenticating against twitter API")
@@ -79,12 +108,6 @@ class S2CoastalBot:
 
         # post tweet
         logger.info("Posting tweet")
-        location_name = get_location_name(subset_center_coords)
-        text = "{} ({}) {}".format(
-            location_name,
-            format_lon_lat(subset_center_coords),
-            date.strftime("%Y %b %d"),
-        )
         media = apiv1.media_upload(filename=postprocessed_file_path)
         apiv2.create_tweet(text=text, media_ids=[media.media_id], user_auth=True)
 

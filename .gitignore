@@ -4,6 +4,7 @@
 ---------------------------------------------------------------------
 # files specific to s2coastalbot
 config/config.ini
+config/*.secret
 data/*
 tests/*
 logs/*
