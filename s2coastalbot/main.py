@@ -70,8 +70,8 @@ class S2CoastalBot:
         logger.info("Authenticating against twitter API")
         auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
         auth.set_access_token(access_token, access_token_secret)
-        apiv1 = tweepy.API(auth) # API v1.1 required to upload media
-        apiv2 = tweepy.Client( # API v2 required to post tweets
+        apiv1 = tweepy.API(auth)  # API v1.1 required to upload media
+        apiv2 = tweepy.Client(  # API v2 required to post tweets
             consumer_key=consumer_key,
             consumer_secret=consumer_secret,
             access_token=access_token,
@@ -93,11 +93,12 @@ class S2CoastalBot:
         if cleaning:
             logger.info("Cleaning data")
             product_path = os.path.dirname(
-                os.path.dirname(os.path.dirname(os.path.dirname(postprocessed_file_path)))
+                os.path.dirname(
+                    os.path.dirname(os.path.dirname(os.path.dirname(postprocessed_file_path)))
+                )
             )
             shutil.rmtree(product_path)
 
 
 if __name__ == "__main__":
-
     s2coastalbot = S2CoastalBot()
