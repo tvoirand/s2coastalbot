@@ -76,7 +76,11 @@ class S2CoastalBot:
         mastodon_client_secret = config.get("access", "mastodon_client_secret")
         mastodon_base_url = config.get("access", "mastodon_base_url")
         mastodon_secret_file = config.get("access", "mastodon_secret_file")
-        mastodon = Mastodon(client_id=mastodon_client_id, client_secret=mastodon_client_secret, api_base_url=mastodon_base_url)
+        mastodon = Mastodon(
+            client_id=mastodon_client_id,
+            client_secret=mastodon_client_secret,
+            api_base_url=mastodon_base_url,
+        )
         mastodon.log_in(
             mastodon_email,
             mastodon_password,
@@ -85,7 +89,10 @@ class S2CoastalBot:
 
         # post toot
         logger.info("Posting toot")
-        media_dict = mastodon.media_post(media_file=postprocessed_file_path)
+        media_dict = mastodon.media_post(
+            media_file=postprocessed_file_path,
+            description="Snapshot of a satellite image of a coastal area.",
+        )
         mastodon.status_post(
             status=text,
             media_ids=[media_dict["id"]],
