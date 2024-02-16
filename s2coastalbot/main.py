@@ -1,6 +1,6 @@
 """
 s2coastalbot main script.
-Twitter bot that posts newly acquired Sentinel-2 images of coastal areas.
+Bot that posts newly acquired Sentinel-2 images of coastal areas, on Twitter and on Mastodon.
 """
 
 # standard library
@@ -55,7 +55,7 @@ class S2CoastalBot:
             logger=logger,
         )
 
-        # postprocess image to fit twitter contraints
+        # postprocess image to fit twitter or mastodon contraints
         logger.info("Postprocessing image")
         aoi_file_postprocessing = config.get("misc", "aoi_file_postprocessing")
         postprocessed_file_path, subset_center_coords = postprocess_tci_image(

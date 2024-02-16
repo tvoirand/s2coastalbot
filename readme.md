@@ -1,6 +1,6 @@
 # s2coastalbot
 
-[S2coastalbot](https://twitter.com/s2coastalbot) is a twitter bot that posts Sentinel-2 images acquired recently over coastal areas.
+[S2coastalbot](https://mastodon.social/@s2coastalbot) is a Mastodon bot that posts Sentinel-2 images acquired recently over coastal areas.
 
 Inspired from [Sentinel2Bot](https://twitter.com/Sentinel2Bot) and [LandsatBot](https://twitter.com/LandsatBot).
 
