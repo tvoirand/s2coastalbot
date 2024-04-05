@@ -1,0 +1,14 @@
+name: Check latest status date
+on:
+  push:
+  schedule:
+    - cron: "26 10 * * 4"  # Set to run every Thursdays
+jobs:
+  latest-status:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run tests
+        run: pytest
