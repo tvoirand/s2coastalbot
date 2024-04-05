@@ -13,3 +13,5 @@ fiona
 pyproj
 icecream
 Mastodon.py
+pytz
+pytest
