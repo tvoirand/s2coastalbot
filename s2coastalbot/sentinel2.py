@@ -61,7 +61,7 @@ def read_nodata_from_l2a_prod(product_series, output_folder, products_api, logge
     else:
         # read metadata file to check nodata pixels percentage
         l2a_safe_path = output_folder / product_series["filename"]
-        l2a_mtd_file = l2a_safe_path.rglob("*MTD_MSIL2A.xml")
+        l2a_mtd_file = next(l2a_safe_path.rglob("*MTD_MSIL2A.xml"))
         return read_nodata_pixel_percentage(l2a_mtd_file)
 
 
@@ -239,6 +239,6 @@ def download_tci_image(config, output_folder=None, logger=None):
 
         # find tci file path
         safe_path = output_folder / product_row["filename"]
-        tci_file_path = safe_path.rglob("*_TCI_10m.JP2")
+        tci_file_path = next(safe_path.rglob("*_TCI_10m.jp2"))
 
         return tci_file_path, product_info["date"]
