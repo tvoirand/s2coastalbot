@@ -5,8 +5,8 @@ Bot that posts newly acquired Sentinel-2 images of coastal areas, on Twitter and
 
 # standard library
 import configparser
-import os
 import shutil
+from pathlib import Path
 
 # third party
 import tweepy
@@ -22,21 +22,15 @@ from s2coastalbot.sentinel2 import download_tci_image
 
 def main():
 
+    project_path = Path(__file__).parents[1]
+
     # create logger
-    log_file = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
-        "logs",
-        "s2coastalbot.log",
-    )
+    log_file = project_path / "logs" / "s2coastalbot.log"
     logger = get_custom_logger(log_file)
 
     # read config
     logger.info("Reading config")
-    config_file = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
-        "config",
-        "config.ini",
-    )
+    config_file = project_path / "config" / "config.ini"
     config = configparser.ConfigParser()
     config.read(config_file)
 
@@ -49,7 +43,7 @@ def main():
 
     # postprocess image to fit twitter or mastodon contraints
     logger.info("Postprocessing image")
-    aoi_file_postprocessing = config.get("misc", "aoi_file_postprocessing")
+    aoi_file_postprocessing = Path(config.get("misc", "aoi_file_postprocessing"))
     postprocessed_file_path, subset_center_coords = postprocess_tci_image(
         tci_file_path, aoi_file_postprocessing, logger
     )
@@ -116,11 +110,7 @@ def main():
     cleaning = config.get("misc", "cleaning").lower() in ["true", "yes", "t", "y"]
     if cleaning:
         logger.info("Cleaning data")
-        product_path = os.path.dirname(
-            os.path.dirname(
-                os.path.dirname(os.path.dirname(os.path.dirname(postprocessed_file_path)))
-            )
-        )
+        product_path = postprocessed_file_path.parents[4]
         shutil.rmtree(product_path)
 
 

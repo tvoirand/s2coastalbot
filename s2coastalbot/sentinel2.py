@@ -4,11 +4,11 @@ Sentinel-2 data handling module for s2coastalbot.
 
 # standard library
 import datetime
-import os
 import random
 import shutil
 import sys
 import xml.etree.ElementTree as ET
+from pathlib import Path
 from time import sleep
 
 # third party
@@ -21,24 +21,6 @@ from shapely.geometry import MultiPoint
 
 # current project
 from s2coastalbot.custom_logger import get_custom_logger
-
-
-def find_tci_file(product_path):
-    """Look for TCI file within S2 L2A product."""
-    for path, dirs, files in os.walk(product_path):
-        for f in files:
-            if f.lower().endswith("_tci_10m.jp2"):
-                return os.path.join(path, f)
-    return None
-
-
-def find_mtd_file(product_path):
-    """Look for MTD file within S2 L2A product."""
-    for path, dirs, files in os.walk(product_path):
-        for f in files:
-            if f.lower().endswith("mtd_msil2a.xml"):
-                return os.path.join(path, f)
-    return None
 
 
 def read_nodata_pixel_percentage(mtd_file):
@@ -57,7 +39,7 @@ def read_nodata_from_l2a_prod(product_series, output_folder, products_api, logge
     """Read nodata pixels percentage in L2A product.
     Input:
         -product_series     pd.Series
-        -output_folder      str
+        -output_folder      Path
         -products_api       SentinelProductsAPI
         -logger             logging.Logger
     Output:
@@ -78,8 +60,8 @@ def read_nodata_from_l2a_prod(product_series, output_folder, products_api, logge
         return None
     else:
         # read metadata file to check nodata pixels percentage
-        l2a_safe_path = os.path.join(output_folder, product_series["filename"])
-        l2a_mtd_file = find_mtd_file(l2a_safe_path)
+        l2a_safe_path = output_folder / product_series["filename"]
+        l2a_mtd_file = l2a_safe_path.rglob("*MTD_MSIL2A.xml")
         return read_nodata_pixel_percentage(l2a_mtd_file)
 
 
@@ -88,7 +70,7 @@ def sentinelsat_retry_download(api, uuid, output_folder, nodefilter, logger):
     Input:
         -api            SentinelAPI or SentinelProductsAPI
         -uuid           str
-        -output_folder  str
+        -output_folder  Path
         -nodefilter     nodefilter function
         -logger         logging.Logger
     Output:
@@ -102,7 +84,9 @@ def sentinelsat_retry_download(api, uuid, output_folder, nodefilter, logger):
     for retry_nb in range(9):
 
         try:
-            product_info = api.download(uuid, directory_path=output_folder, nodefilter=nodefilter)
+            product_info = api.download(
+                uuid, directory_path=str(output_folder), nodefilter=nodefilter
+            )
             error_str = None
 
         except Exception as error:
@@ -137,37 +121,31 @@ def download_tci_image(config, output_folder=None, logger=None):
             contains:
                 access: copernicus_user, copernicus_password
                 misc: aoi_file_downloading, cleaning
-        -output_folder          str or None
+        -output_folder          Path or None
         -logger                 logging.Logger or None
     Output:
-        -tci_file_path          str
+        -tci_file_path          Path
         -                       datetime.datetime
     """
+    project_path = Path(__file__).parents[1]
 
     # read config
     copernicus_user = config.get("access", "copernicus_user")
     copernicus_password = config.get("access", "copernicus_password")
-    aoi_file = config.get("misc", "aoi_file_downloading")
+    aoi_file = Path(config.get("misc", "aoi_file_downloading"))
     cleaning = config.get("misc", "cleaning")
     cloud_cover_max = config.get("search", "cloud_cover_max")
     timerange = config.get("search", "timerange")
 
     # create logger if necessary
     if logger is None:
-        log_file = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
-            "logs",
-            "s2coastalbot.log",
-        )
+        log_file = project_path / "logs" / "s2coastalbot.log"
         logger = get_custom_logger(log_file)
 
     # create output folder if necessary
     if output_folder is None:
-        output_folder = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "data"
-        )
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
+        output_folder = project_path / "data"
+    output_folder.mkdir(exist_ok=True, parents=True)
 
     # connect to APIs
     api = SentinelAPI(copernicus_user, copernicus_password, api_url="https://colhub.met.no")
@@ -176,12 +154,8 @@ def download_tci_image(config, output_folder=None, logger=None):
     )
 
     # read list of already downloaded images
-    downloaded_images_file = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
-        "data",
-        "downloaded_images.csv",
-    )
-    if not os.path.exists(downloaded_images_file):  # initiate file if necessary
+    downloaded_images_file = project_path / "data" / "downloaded_images.csv"
+    if not downloaded_images_file.exists():  # initiate file if necessary
         downloaded_images = pd.DataFrame(columns=["date", "product"])
     else:
         downloaded_images = pd.read_csv(downloaded_images_file)
@@ -234,7 +208,7 @@ def download_tci_image(config, output_folder=None, logger=None):
             if nodata_pixel_percentage != 0.0 or nodata_pixel_percentage is None:
                 logger.info("Tile contains nodata or metadata download failure")
                 if cleaning:
-                    shutil.rmtree(os.path.join(output_folder, product_row["filename"]))
+                    shutil.rmtree(output_folder / product_row["filename"])
             else:
                 logger.info("Tile is fully covered (0% nodata pixels)")
                 found_suitable_product = True
@@ -264,7 +238,7 @@ def download_tci_image(config, output_folder=None, logger=None):
         downloaded_images.to_csv(downloaded_images_file, index=False)
 
         # find tci file path
-        safe_path = os.path.join(output_folder, product_row["filename"])
-        tci_file_path = find_tci_file(safe_path)
+        safe_path = output_folder / product_row["filename"]
+        tci_file_path = safe_path.rglob("*_TCI_10m.JP2")
 
         return tci_file_path, product_info["date"]

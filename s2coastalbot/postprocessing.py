@@ -3,9 +3,9 @@ Image postprocessing module for s2coastalbot.
 """
 
 # standard library
-import os
 import random
 import sys
+from pathlib import Path
 
 # third party
 import fiona
@@ -29,12 +29,12 @@ def postprocess_tci_image(input_file, aoi_file, logger=None):
     """
     Postprocess TCI image for s2coastalbot.
     Input:
-        -input_file     str
-        -aoi_file       str
+        -input_file     Path
+        -aoi_file       Path
             Geojson file containing polyline shapes
         -logger         logging.Logger or None
     Output:
-        -output_file    str
+        -output_file    Path
         -center_coords  (float, float)
             lon, lat
     """
@@ -73,15 +73,12 @@ def postprocess_tci_image(input_file, aoi_file, logger=None):
 
     # create logger if necessary
     if logger is None:
-        log_file = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
-            "logs",
-            "s2coastalbot.log",
-        )
+        project_path = Path(__file__).parents[1]
+        log_file = project_path / "logs" / "s2coastalbot.log"
         logger = get_custom_logger(log_file)
 
     # create some constants
-    output_file = "{}_postprocessed.png".format(os.path.splitext(input_file)[0])
+    output_file = input_file.parent / f"{input_file.stem}_postprocessed.png"
 
     # open input dataset
     with rasterio.open(input_file) as in_dataset:
