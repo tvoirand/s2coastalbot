@@ -4,7 +4,6 @@ Custom logging module with predefined config.
 
 # standard library
 import logging
-import os
 import socket
 from logging.handlers import RotatingFileHandler
 
@@ -17,7 +16,7 @@ def get_custom_logger(log_file, level=20):
 
     Parameters
     ----------
-    log_file : str
+    log_file : Path
     level : int
         use logging.DEBUG, logging.INFO, ... or 10, 20, ... respectively
 
@@ -27,8 +26,7 @@ def get_custom_logger(log_file, level=20):
     """
 
     # create some paths
-    if not os.path.exists(os.path.dirname(log_file)):
-        os.makedirs(os.path.dirname(log_file))
+    log_file.parent.mkdir(exist_ok=True, parents=True)
 
     # create logger
     logger = logging.getLogger()
