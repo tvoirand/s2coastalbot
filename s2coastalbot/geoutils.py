@@ -4,10 +4,17 @@ Geoutils module for s2coastalbot project.
 
 # standard library
 import json
+import time
 
 # third party
+import backoff
 import requests
 from shapely.geometry import Point
+
+
+@backoff.on_exception(backoff.expo, requests.exceptions.RequestException)
+def get_url(url, headers=None):
+    return requests.get(url, headers=headers)
 
 
 def format_lon_lat(coords):
@@ -67,14 +74,19 @@ def get_location_name(input_coords):
         coords = points[count]
 
         # perform request
-        headers = {"Accept-Language": "en-US,en;q=0.8"}
+        headers = {
+            "Accept-Language": "en-US,en;q=0.8",
+            "Referer": "https://thibautvoirand.com/s2coastalbot",
+        }
         url = "http://nominatim.openstreetmap.org/reverse?lat={}&lon={}&".format(
             coords[1], coords[0]
         )
         url += "addressdetails=0&format=json&zoom=6&extratags=0"
-        response = json.loads(requests.get(url, headers=headers).text)
+        response = get_url(url, headers=headers)
+        response = json.loads(response.text)
 
         count += 1
+        time.sleep(1)  # to avoid heavy use of OSM's Nominatim service
 
     if count >= 1000:
         return "Unknown location"
