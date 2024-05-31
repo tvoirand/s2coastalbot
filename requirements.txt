@@ -7,4 +7,3 @@ fiona
 pyproj
 Mastodon.py
 pytz
-pytest
