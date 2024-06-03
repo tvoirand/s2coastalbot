@@ -190,13 +190,14 @@ def download_tci_image(config, output_folder=None, logger=None):
         )
 
         # select a product that is fully covered (no nodata pixels)
+        logger.info("Selecting a product that is fully covered (no nodata pixels)")
         for i, product_row in [
             (i, p)
             for (i, p) in products_df.iterrows()
             if not p["title"] in downloaded_images["product"].to_list()
         ]:
 
-            logger.info("Checking nodata for product: {}".format(product_row["title"]))
+            logger.debug("Checking nodata for product: {}".format(product_row["title"]))
 
             # check if product contains nodata pixels (which probably means it's on edge of swath)
             nodata_pixel_percentage = read_nodata_from_l2a_prod(
@@ -206,11 +207,11 @@ def download_tci_image(config, output_folder=None, logger=None):
                 logger,
             )
             if nodata_pixel_percentage != 0.0 or nodata_pixel_percentage is None:
-                logger.info("Tile contains nodata or metadata download failure")
+                logger.debug("Tile contains nodata or metadata download failure")
                 if cleaning:
                     shutil.rmtree(output_folder / product_row["filename"])
             else:
-                logger.info("Tile is fully covered (0% nodata pixels)")
+                logger.info(f"Product {product_row['title']} is fully covered (0% nodata pixels)")
                 found_suitable_product = True
                 break
 
