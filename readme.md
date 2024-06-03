@@ -4,7 +4,7 @@
 
 Inspired from [Sentinel2Bot](https://twitter.com/Sentinel2Bot) and [LandsatBot](https://twitter.com/LandsatBot).
 
-Described in more details on [thibautvoirand.com/s2coastalbot](https://thibautvoirand.com/s2coastalbot/).
+Described in more details on [thibautvoirand.com/s2coastalbot](https://thibautvoirand.com/s2coastalbot).
 
 ### Installation
 
@@ -21,3 +21,7 @@ For example using pip:
 ### Contribute
 
 Please feel free to contribute by opening issues or pull-requests!
+
+### Credits
+
+Image locations descriptions are obtained from [OpenStreetMap](https://www.openstreetmap.org/copyright).
