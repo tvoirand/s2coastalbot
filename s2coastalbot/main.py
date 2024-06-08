@@ -61,6 +61,7 @@ def main():
             logger.info("Cleaning data")
             product_path = tci_file_path.parents[4]
             shutil.rmtree(product_path)
+        return
 
     try:
         # authenticate to Mastodon API
@@ -87,6 +88,7 @@ def main():
             logger.info("Cleaning data")
             product_path = tci_file_path.parents[4]
             shutil.rmtree(product_path)
+        return
 
     try:
         # post toot
@@ -106,6 +108,7 @@ def main():
             logger.info("Cleaning data")
             product_path = tci_file_path.parents[4]
             shutil.rmtree(product_path)
+        return
 
     try:
         # authenticate twitter account
@@ -129,6 +132,7 @@ def main():
             logger.info("Cleaning data")
             product_path = tci_file_path.parents[4]
             shutil.rmtree(product_path)
+        return
 
     try:
         # post tweet
@@ -141,12 +145,14 @@ def main():
             logger.info("Cleaning data")
             product_path = tci_file_path.parents[4]
             shutil.rmtree(product_path)
+        return
 
     # clean data if necessary
     if cleaning:
         logger.info("Cleaning data")
         product_path = tci_file_path.parents[4]
         shutil.rmtree(product_path)
+    return
 
 
 if __name__ == "__main__":
