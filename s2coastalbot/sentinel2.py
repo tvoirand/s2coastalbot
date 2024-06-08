@@ -6,7 +6,6 @@ Sentinel-2 data handling module for s2coastalbot.
 import datetime
 import random
 import shutil
-import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from time import sleep
@@ -216,8 +215,7 @@ def download_tci_image(config, output_folder=None, logger=None):
                 break
 
     if not found_suitable_product:  # case where while loop above didn't generate suitable product
-        logger.error("No suitable product found in any tile within the footprint")
-        sys.exit(128)
+        raise Exception("No suitable product found in any tile within the footprint")
 
     # download only TCI band
     nodefilter = make_path_filter("*_TCI_10m.jp2")
@@ -226,8 +224,7 @@ def download_tci_image(config, output_folder=None, logger=None):
     )
 
     if product_info is None:
-        logger.error("Failed sentinelsat download stopped processing")
-        sys.exit(128)
+        raise Exception("Failed sentinelsat download")
 
     else:
 
