@@ -4,7 +4,6 @@ Image postprocessing module for s2coastalbot.
 
 # standard library
 import random
-import sys
 from pathlib import Path
 
 # third party
@@ -110,8 +109,7 @@ def postprocess_tci_image(input_file, aoi_file, logger=None):
 
         # raise error if there are no intersection with coastline
         if coastline_subsets == []:
-            logger.error("No intersection with coastline found")
-            sys.exit(128)
+            raise Exception("No intersection with coastline found")
 
         center_coords = random.choice(random.choice(coastline_subsets).coords)
         logger.info(
