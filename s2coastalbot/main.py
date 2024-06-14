@@ -4,7 +4,9 @@ Bot that posts newly acquired Sentinel-2 images of coastal areas, on Twitter and
 """
 
 # standard library
+import argparse
 import configparser
+import logging
 import shutil
 from pathlib import Path
 
@@ -20,19 +22,14 @@ from s2coastalbot.postprocessing import postprocess_tci_image
 from s2coastalbot.sentinel2 import download_tci_image
 
 
-def main():
+def s2coastalbot_main(config):
+    """
+    Input:
+        - config    configparser.ConfigParser
+            See contents in 'config/example_config.ini'
+    """
+    logger = logging.getLogger()
 
-    project_path = Path(__file__).parents[1]
-
-    # create logger
-    log_file = project_path / "logs" / "s2coastalbot.log"
-    logger = get_custom_logger(log_file)
-
-    # read config
-    logger.info("Reading config")
-    config_file = project_path / "config" / "config.ini"
-    config = configparser.ConfigParser()
-    config.read(config_file)
     cleaning = config.getboolean("misc", "cleaning")
 
     # download Sentinel-2 True Color Image
@@ -156,4 +153,36 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-cf",
+        "--config_file",
+        help="Default: 'config/config.ini' file in project's development folder",
+    )
+    parser.add_argument(
+        "-lf",
+        "--log_file",
+        help="Default: 'logs/s2coastalbot.log' file in project's development folder",
+    )
+    args = parser.parse_args()
+
+    project_path = Path(__file__).parents[1]
+
+    # create logger
+    log_file = (
+        project_path / "logs" / "s2coastalbot.log" if args.log_file is None else Path(args.log_file)
+    )
+    logger = get_custom_logger(log_file)
+
+    # read config
+    logger.info("Reading config")
+    config_file = (
+        project_path / "config" / "config.ini"
+        if args.config_file is None
+        else Path(args.config_file)
+    )
+    config = configparser.ConfigParser()
+    config.read(config_file)
+
+    s2coastalbot_main(config)
