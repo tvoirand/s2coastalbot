@@ -35,33 +35,41 @@ def main():
     config.read(config_file)
     cleaning = config.getboolean("misc", "cleaning")
 
-    # download Sentinel-2 True Color Image
-    logger.info("Downloading Sentinel-2 TCI image")
-    tci_file_path, date = download_tci_image(
-        config,
-        logger=logger,
-    )
+    postprocessed_file_path = None
+    while postprocessed_file_path is None:
 
-    try:
-        # postprocess image to fit twitter or mastodon contraints
-        logger.info("Postprocessing image")
-        aoi_file_postprocessing = Path(config.get("misc", "aoi_file_postprocessing"))
-        postprocessed_file_path, subset_center_coords = postprocess_tci_image(
-            tci_file_path, aoi_file_postprocessing, logger
+        # download Sentinel-2 True Color Image
+        logger.info("Downloading Sentinel-2 TCI image")
+        tci_file_path, date = download_tci_image(
+            config,
+            logger=logger,
         )
-        location_name = get_location_name(subset_center_coords)
-        text = "{} ({}) {}".format(
-            location_name,
-            format_lon_lat(subset_center_coords),
-            date.strftime("%Y %b %d"),
-        )
-    except Exception as error_msg:
-        logger.error(f"Error postprocessing image: {error_msg}")
-        if cleaning:
-            logger.info("Cleaning data")
-            product_path = tci_file_path.parents[4]
-            shutil.rmtree(product_path)
-        return
+
+        try:
+            # postprocess image to fit twitter or mastodon contraints
+            logger.info("Postprocessing image")
+            aoi_file_postprocessing = Path(config.get("misc", "aoi_file_postprocessing"))
+            postprocessed_file_path, subset_center_coords = postprocess_tci_image(
+                tci_file_path, aoi_file_postprocessing, logger
+            )
+            location_name = get_location_name(subset_center_coords)
+            text = "{} ({}) {}".format(
+                location_name,
+                format_lon_lat(subset_center_coords),
+                date.strftime("%Y %b %d"),
+            )
+        except StopIteration:
+            if cleaning:
+                logger.info("Cleaning data")
+                product_path = tci_file_path.parents[4]
+                shutil.rmtree(product_path)
+
+        except Exception as error_msg:
+            logger.error(f"Error postprocessing image: {error_msg}")
+            if cleaning:
+                logger.info("Cleaning data")
+                product_path = tci_file_path.parents[4]
+                shutil.rmtree(product_path)
 
     try:
         # authenticate to Mastodon API
