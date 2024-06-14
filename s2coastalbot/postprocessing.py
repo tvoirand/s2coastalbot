@@ -14,6 +14,7 @@ import rasterio
 from rasterio.windows import Window
 from shapely.geometry import LineString
 from shapely.geometry import MultiLineString
+from shapely.geometry import Point
 from shapely.geometry import Polygon
 
 # current project
@@ -93,8 +94,8 @@ def postprocess_tci_image(input_file, aoi_file, logger=None):
         footprint = [(lon, lat) for (lat, lon) in utm_to_latlon.itransform(footprint)]
         footprint = Polygon(footprint)
 
-        # locate image subset center among intersections with coastline
-        logger.info("Locating subset center among intersections with coastline")
+        # locate intersections with coastline
+        logger.info("Locating intersections with coastline")
         coastline_subsets = []
         with fiona.open(aoi_file, "r") as infile:
             for feat in infile:
@@ -102,50 +103,73 @@ def postprocess_tci_image(input_file, aoi_file, logger=None):
                 if line.intersects(footprint):
                     intersection = line.intersection(footprint)
                     if type(intersection) == LineString:
-                        coastline_subsets.append(line.intersection(footprint))
+                        coastline_subsets.append(intersection)
                     elif type(intersection) == MultiLineString:
-                        for linestring in intersection:
+                        for linestring in intersection.geoms:
                             coastline_subsets.append(linestring)
 
         # raise error if there are no intersection with coastline
         if coastline_subsets == []:
             raise Exception("No intersection with coastline found")
 
-        center_coords = random.choice(random.choice(coastline_subsets).coords)
-        logger.info(
-            "Subset center (lon, lat): {:.4f} - {:.4f}".format(center_coords[0], center_coords[1])
-        )
+        # list up to a hundred of potential subset centers randomly picked along coastline
+        coastline_points = [
+            Point(coords) for line in coastline_subsets for coords in line.coords[:]
+        ]
+        random.shuffle(coastline_points)
+        coastline_points = coastline_points[:100]
 
-        # find subset center pixel
-        latlon_to_utm = pyproj.Transformer.from_crs(4326, in_dataset.crs.to_epsg())
-        center_coords_utm = latlon_to_utm.transform(center_coords[1], center_coords[0])
-        center_pixel = rasterio.transform.rowcol(
-            in_dataset.transform, center_coords_utm[0], center_coords_utm[1]
-        )
+        # loop through potential subset centers, and check if subset contains nodata pixels
+        logger.info("Checking for nodata around a set of points along coastline")
+        for subset_center in coastline_points:
 
-        # find subset window
-        logger.info("Finding corresponding subset window")
-        row_start, row_stop, col_start, col_stop = get_window(
-            center_pixel, SUBSET_SIZE, SUBSET_SIZE, INPUT_MAX_SIZE, INPUT_MAX_SIZE
-        )
-        window = Window.from_slices((row_start, row_stop), (col_start, col_stop))
+            # find subset center pixel
+            logger.debug("Finding subset center pixel")
+            latlon_to_utm = pyproj.Transformer.from_crs(4326, in_dataset.crs.to_epsg())
+            center_coords_utm = latlon_to_utm.transform(subset_center.y, subset_center.x)
+            center_pixel = rasterio.transform.rowcol(
+                in_dataset.transform, center_coords_utm[0], center_coords_utm[1]
+            )
 
-        # read subset of TCI image
-        array = in_dataset.read(window=window)
+            # find subset window
+            logger.debug("Finding corresponding subset window")
+            row_start, row_stop, col_start, col_stop = get_window(
+                center_pixel, SUBSET_SIZE, SUBSET_SIZE, INPUT_MAX_SIZE, INPUT_MAX_SIZE
+            )
+            window = Window.from_slices((row_start, row_stop), (col_start, col_stop))
 
-        # write subset to output file
-        logger.info("Writing subset output file")
-        with rasterio.open(
-            output_file,
-            "w",
-            driver="PNG",
-            count=in_dataset.count,
-            height=SUBSET_SIZE,
-            width=SUBSET_SIZE,
-            dtype=np.uint8,
-            transform=in_dataset.window_transform(window),
-            crs=in_dataset.crs,
-        ) as out_dataset:
-            out_dataset.write(array)
+            # read subset of TCI image
+            logger.debug("Reading subset of TCI image")
+            array = in_dataset.read(window=window)
 
-    return output_file, center_coords
+            # check ratio of nodata pixels, if it's inferior to 5%, select this subset and continue
+            logger.debug("Checking nodata pixels ratio")
+            non_zero_array = np.count_nonzero(array, axis=0)  # array of non-zero count along bands
+            non_zero_count = np.count_nonzero(non_zero_array)  # amount of non-zero pixles in array
+            nodata_ratio = 1 - non_zero_count / array.shape[1] / array.shape[2]
+            if nodata_ratio < 0.05:
+                logger.info(
+                    "Selected subset center (lon, lat): {:.4f} - {:.4f}".format(
+                        subset_center.x, subset_center.y
+                    )
+                )
+
+                # write subset to output file
+                logger.info("Writing subset output file")
+                with rasterio.open(
+                    output_file,
+                    "w",
+                    driver="PNG",
+                    count=in_dataset.count,
+                    height=SUBSET_SIZE,
+                    width=SUBSET_SIZE,
+                    dtype=np.uint8,
+                    transform=in_dataset.window_transform(window),
+                    crs=in_dataset.crs,
+                ) as out_dataset:
+                    out_dataset.write(array)
+
+                return output_file, (subset_center.x, subset_center.y)
+
+        logger.info("Couldn't find subset with <5% nodata in this image")
+        raise StopIteration(f"Couldn't find subset with <5% nodata in {input_file.stem}")
