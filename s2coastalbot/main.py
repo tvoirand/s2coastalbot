@@ -4,7 +4,9 @@ Bot that posts newly acquired Sentinel-2 images of coastal areas, on Twitter and
 """
 
 # standard library
+import argparse
 import configparser
+import logging
 import shutil
 from pathlib import Path
 
@@ -20,19 +22,24 @@ from s2coastalbot.postprocessing import postprocess_tci_image
 from s2coastalbot.sentinel2 import download_tci_image
 
 
-def main():
+def clean_data_based_on_tci_file(tci_file_path):
+    """Remove product's folder based on TCI file path.
+    Input:
+        - tci_file_path     Path
+    """
+    logger = logging.getLogger()
+    logger.info("Cleaning data")
+    product_path = tci_file_path.parents[4]
+    shutil.rmtree(product_path)
 
-    project_path = Path(__file__).parents[1]
 
-    # create logger
-    log_file = project_path / "logs" / "s2coastalbot.log"
-    logger = get_custom_logger(log_file)
-
-    # read config
-    logger.info("Reading config")
-    config_file = project_path / "config" / "config.ini"
-    config = configparser.ConfigParser()
-    config.read(config_file)
+def s2coastalbot_main(config):
+    """
+    Input:
+        - config    configparser.ConfigParser
+            See contents in 'config/example_config.ini'
+    """
+    logger = logging.getLogger()
     cleaning = config.getboolean("misc", "cleaning")
 
     postprocessed_file_path = None
@@ -40,17 +47,14 @@ def main():
 
         # download Sentinel-2 True Color Image
         logger.info("Downloading Sentinel-2 TCI image")
-        tci_file_path, date = download_tci_image(
-            config,
-            logger=logger,
-        )
+        tci_file_path, date = download_tci_image(config)
 
         try:
             # postprocess image to fit twitter or mastodon contraints
             logger.info("Postprocessing image")
             aoi_file_postprocessing = Path(config.get("misc", "aoi_file_postprocessing"))
             postprocessed_file_path, subset_center_coords = postprocess_tci_image(
-                tci_file_path, aoi_file_postprocessing, logger
+                tci_file_path, aoi_file_postprocessing
             )
             location_name = get_location_name(subset_center_coords)
             text = "{} ({}) {}".format(
@@ -60,16 +64,11 @@ def main():
             )
         except StopIteration:
             if cleaning:
-                logger.info("Cleaning data")
-                product_path = tci_file_path.parents[4]
-                shutil.rmtree(product_path)
-
+                clean_data_based_on_tci_file(tci_file_path)
         except Exception as error_msg:
             logger.error(f"Error postprocessing image: {error_msg}")
             if cleaning:
-                logger.info("Cleaning data")
-                product_path = tci_file_path.parents[4]
-                shutil.rmtree(product_path)
+                clean_data_based_on_tci_file(tci_file_path)
 
     try:
         # authenticate to Mastodon API
@@ -93,9 +92,7 @@ def main():
     except Exception as error_msg:
         logger.error(f"Error authenticating to Mastodon API: {error_msg}")
         if cleaning:
-            logger.info("Cleaning data")
-            product_path = tci_file_path.parents[4]
-            shutil.rmtree(product_path)
+            clean_data_based_on_tci_file(tci_file_path)
         return
 
     try:
@@ -113,9 +110,7 @@ def main():
     except Exception as error_msg:
         logger.error(f"Error posting toot: {error_msg}")
         if cleaning:
-            logger.info("Cleaning data")
-            product_path = tci_file_path.parents[4]
-            shutil.rmtree(product_path)
+            clean_data_based_on_tci_file(tci_file_path)
         return
 
     try:
@@ -137,9 +132,7 @@ def main():
     except Exception as error_msg:
         logger.error(f"Error authenticating to twitter API: {error_msg}")
         if cleaning:
-            logger.info("Cleaning data")
-            product_path = tci_file_path.parents[4]
-            shutil.rmtree(product_path)
+            clean_data_based_on_tci_file(tci_file_path)
         return
 
     try:
@@ -150,18 +143,46 @@ def main():
     except Exception as error_msg:
         logger.error(f"Error posting tweet: {error_msg}")
         if cleaning:
-            logger.info("Cleaning data")
-            product_path = tci_file_path.parents[4]
-            shutil.rmtree(product_path)
+            clean_data_based_on_tci_file(tci_file_path)
         return
 
     # clean data if necessary
     if cleaning:
-        logger.info("Cleaning data")
-        product_path = tci_file_path.parents[4]
-        shutil.rmtree(product_path)
+        clean_data_based_on_tci_file(tci_file_path)
     return
 
 
 if __name__ == "__main__":
-    main()
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-cf",
+        "--config_file",
+        help="Default: 'config/config.ini' file in project's development folder",
+    )
+    parser.add_argument(
+        "-lf",
+        "--log_file",
+        help="Default: 'logs/s2coastalbot.log' file in project's development folder",
+    )
+    args = parser.parse_args()
+
+    project_path = Path(__file__).parents[1]
+
+    # create logger
+    log_file = (
+        project_path / "logs" / "s2coastalbot.log" if args.log_file is None else Path(args.log_file)
+    )
+    logger = get_custom_logger(log_file)
+
+    # read config
+    logger.info("Reading config")
+    config_file = (
+        project_path / "config" / "config.ini"
+        if args.config_file is None
+        else Path(args.config_file)
+    )
+    config = configparser.ConfigParser()
+    config.read(config_file)
+
+    s2coastalbot_main(config)

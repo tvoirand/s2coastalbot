@@ -3,36 +3,30 @@ Image postprocessing module for s2coastalbot.
 """
 
 # standard library
+import logging
 import random
-from pathlib import Path
 
 # third party
-import fiona
+import geopandas as gpd
 import numpy as np
 import pyproj
 import rasterio
 from rasterio.windows import Window
-from shapely.geometry import LineString
-from shapely.geometry import MultiLineString
 from shapely.geometry import Point
 from shapely.geometry import Polygon
-
-# current project
-from s2coastalbot.custom_logger import get_custom_logger
 
 # create some constants
 INPUT_MAX_SIZE = 10980
 SUBSET_SIZE = 1000
 
 
-def postprocess_tci_image(input_file, aoi_file, logger=None):
+def postprocess_tci_image(input_file, aoi_file):
     """
     Postprocess TCI image for s2coastalbot.
     Input:
         -input_file     Path
         -aoi_file       Path
             Geojson file containing polyline shapes
-        -logger         logging.Logger or None
     Output:
         -output_file    Path
         -center_coords  (float, float)
@@ -71,11 +65,7 @@ def postprocess_tci_image(input_file, aoi_file, logger=None):
         # translate 0-1 range into output range
         return out_min + (value_scaled * out_span)
 
-    # create logger if necessary
-    if logger is None:
-        project_path = Path(__file__).parents[1]
-        log_file = project_path / "logs" / "s2coastalbot.log"
-        logger = get_custom_logger(log_file)
+    logger = logging.getLogger()
 
     # create some constants
     output_file = input_file.parent / f"{input_file.stem}_postprocessed.png"
@@ -94,19 +84,11 @@ def postprocess_tci_image(input_file, aoi_file, logger=None):
         footprint = [(lon, lat) for (lat, lon) in utm_to_latlon.itransform(footprint)]
         footprint = Polygon(footprint)
 
-        # locate intersections with coastline
-        logger.info("Locating intersections with coastline")
-        coastline_subsets = []
-        with fiona.open(aoi_file, "r") as infile:
-            for feat in infile:
-                line = LineString(feat["geometry"]["coordinates"])
-                if line.intersects(footprint):
-                    intersection = line.intersection(footprint)
-                    if type(intersection) == LineString:
-                        coastline_subsets.append(intersection)
-                    elif type(intersection) == MultiLineString:
-                        for linestring in intersection.geoms:
-                            coastline_subsets.append(linestring)
+        # locate image subset center among intersections with coastline
+        logger.info("Locating subset center among intersections with coastline")
+        gdf = gpd.read_file(aoi_file)
+        coastline_subsets = footprint.intersection(gdf["geometry"])
+        coastline_subsets = [line for line in coastline_subsets if not line.is_empty]
 
         # raise error if there are no intersection with coastline
         if coastline_subsets == []:

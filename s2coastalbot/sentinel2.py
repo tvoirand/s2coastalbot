@@ -4,33 +4,30 @@ Sentinel-2 data handling module for s2coastalbot.
 
 # standard library
 import datetime
-import random
+import logging
 from pathlib import Path
 from time import sleep
 
 # third party
-import fiona
+import geopandas as gpd
 import pandas as pd
 from sentinelsat import SentinelAPI
 from sentinelsat import SentinelProductsAPI
 from sentinelsat import make_path_filter
 from shapely.geometry import MultiPoint
 
-# current project
-from s2coastalbot.custom_logger import get_custom_logger
 
-
-def sentinelsat_retry_download(api, uuid, output_folder, nodefilter, logger):
+def sentinelsat_retry_download(api, uuid, output_folder, nodefilter):
     """Download product with sentinelsat api with retry and backoff.
     Input:
         -api            SentinelAPI or SentinelProductsAPI
         -uuid           str
         -output_folder  Path
         -nodefilter     nodefilter function
-        -logger         logging.Logger
     Output:
         -               dict or None
     """
+    logger = logging.getLogger()
 
     # initiate sleep time
     sleep_time = 2
@@ -68,7 +65,7 @@ def sentinelsat_retry_download(api, uuid, output_folder, nodefilter, logger):
     return None
 
 
-def download_tci_image(config, output_folder=None, logger=None):
+def download_tci_image(config, output_folder=None):
     """
     Download a random recently acquired Sentinel-2 image.
     Input:
@@ -77,11 +74,12 @@ def download_tci_image(config, output_folder=None, logger=None):
                 access: copernicus_user, copernicus_password
                 misc: aoi_file_downloading, cleaning
         -output_folder          Path or None
-        -logger                 logging.Logger or None
     Output:
         -tci_file_path          Path
         -                       datetime.datetime
     """
+    logger = logging.getLogger()
+
     project_path = Path(__file__).parents[1]
 
     # read config
@@ -90,11 +88,6 @@ def download_tci_image(config, output_folder=None, logger=None):
     aoi_file = Path(config.get("misc", "aoi_file_downloading"))
     cloud_cover_max = config.get("search", "cloud_cover_max")
     timerange = config.get("search", "timerange")
-
-    # create logger if necessary
-    if logger is None:
-        log_file = project_path / "logs" / "s2coastalbot.log"
-        logger = get_custom_logger(log_file)
 
     # create output folder if necessary
     if output_folder is None:
@@ -114,27 +107,24 @@ def download_tci_image(config, output_folder=None, logger=None):
     else:
         downloaded_images = pd.read_csv(downloaded_images_file)
 
-    # read footprint
-    footprint = []
-    with fiona.open(aoi_file, "r") as infile:
-        for feat in infile:
-            footprint.append(feat["geometry"]["coordinates"])
-    random.shuffle(footprint)
+    # read and shuffle S2 tiles centroids
+    footprint_df = gpd.read_file(aoi_file)
+    footprint_df = footprint_df.sample(frac=1).reset_index(drop=True)
 
     # search for suitable product
     count = 0
     found_suitable_product = False
-    while not found_suitable_product and count + 1 < len(footprint) / 50:
+    while not found_suitable_product and count + 1 < len(footprint_df) / 50:
 
         # use 50 tiles sliding window to query products on all footprint
-        footprint_subset = footprint[count * 50 : (count + 1) * 50]  # noqa E203
+        footprint_subset = footprint_df[count * 50 : (count + 1) * 50]  # noqa E203
         count += 1
 
         # search images
         logger.info("Querying Sentinel-2 products")
         products_df = api.to_dataframe(
             api.query(
-                MultiPoint(footprint[:50]).wkt,  # arbitrarily query first 50 tiles
+                MultiPoint(footprint_subset["geometry"]),
                 date=("NOW-{}DAY".format(timerange), "NOW"),
                 platformname="Sentinel-2",
                 producttype="S2MSI2A",
@@ -159,7 +149,7 @@ def download_tci_image(config, output_folder=None, logger=None):
     # download only TCI band
     nodefilter = make_path_filter("*_TCI_10m.jp2")
     product_info = sentinelsat_retry_download(
-        products_api, product_row["uuid"], output_folder, nodefilter, logger
+        products_api, product_row["uuid"], output_folder, nodefilter
     )
 
     if product_info is None:
