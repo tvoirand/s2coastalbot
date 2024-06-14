@@ -6,11 +6,13 @@ Bot that posts newly acquired Sentinel-2 images of coastal areas, on Twitter and
 # standard library
 import argparse
 import configparser
+import datetime
 import logging
 import shutil
 from pathlib import Path
 
 # third party
+import pandas as pd
 import tweepy
 from mastodon import Mastodon
 
@@ -144,6 +146,18 @@ def s2coastalbot_main(config):
         if cleaning:
             clean_data_based_on_tci_file(tci_file_path)
         return
+
+    # update list of posted images
+    posted_images_file = project_path / "data" / "posted_images.csv"
+    if not posted_images_file.exists():  # initiate file if necessary
+        posted_images = pd.DataFrame(columns=["date", "product"])
+    else:
+        posted_images = pd.read_csv(posted_images_file)
+    posted_images.loc[len(posted_images)] = [
+        datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+        tci_file_path.parents[4].stem,
+    ]
+    posted_images.to_csv(posted_images_file, index=False)
 
     # clean data if necessary
     if cleaning:
