@@ -22,6 +22,17 @@ from s2coastalbot.postprocessing import postprocess_tci_image
 from s2coastalbot.sentinel2 import download_tci_image
 
 
+def clean_data_based_on_tci_file(tci_file_path):
+    """Remove product's folder based on TCI file path.
+    Input:
+        - tci_file_path     Path
+    """
+    logger = logging.getLogger()
+    logger.info("Cleaning data")
+    product_path = tci_file_path.parents[4]
+    shutil.rmtree(product_path)
+
+
 def s2coastalbot_main(config):
     """
     Input:
@@ -29,14 +40,11 @@ def s2coastalbot_main(config):
             See contents in 'config/example_config.ini'
     """
     logger = logging.getLogger()
-
     cleaning = config.getboolean("misc", "cleaning")
 
     # download Sentinel-2 True Color Image
     logger.info("Downloading Sentinel-2 TCI image")
-    tci_file_path, date = download_tci_image(
-        config,
-    )
+    tci_file_path, date = download_tci_image(config)
 
     try:
         # postprocess image to fit twitter or mastodon contraints
@@ -54,9 +62,7 @@ def s2coastalbot_main(config):
     except Exception as error_msg:
         logger.error(f"Error postprocessing image: {error_msg}")
         if cleaning:
-            logger.info("Cleaning data")
-            product_path = tci_file_path.parents[4]
-            shutil.rmtree(product_path)
+            clean_data_based_on_tci_file(tci_file_path)
         return
 
     try:
@@ -81,9 +87,7 @@ def s2coastalbot_main(config):
     except Exception as error_msg:
         logger.error(f"Error authenticating to Mastodon API: {error_msg}")
         if cleaning:
-            logger.info("Cleaning data")
-            product_path = tci_file_path.parents[4]
-            shutil.rmtree(product_path)
+            clean_data_based_on_tci_file(tci_file_path)
         return
 
     try:
@@ -101,9 +105,7 @@ def s2coastalbot_main(config):
     except Exception as error_msg:
         logger.error(f"Error posting toot: {error_msg}")
         if cleaning:
-            logger.info("Cleaning data")
-            product_path = tci_file_path.parents[4]
-            shutil.rmtree(product_path)
+            clean_data_based_on_tci_file(tci_file_path)
         return
 
     try:
@@ -125,9 +127,7 @@ def s2coastalbot_main(config):
     except Exception as error_msg:
         logger.error(f"Error authenticating to twitter API: {error_msg}")
         if cleaning:
-            logger.info("Cleaning data")
-            product_path = tci_file_path.parents[4]
-            shutil.rmtree(product_path)
+            clean_data_based_on_tci_file(tci_file_path)
         return
 
     try:
@@ -138,16 +138,12 @@ def s2coastalbot_main(config):
     except Exception as error_msg:
         logger.error(f"Error posting tweet: {error_msg}")
         if cleaning:
-            logger.info("Cleaning data")
-            product_path = tci_file_path.parents[4]
-            shutil.rmtree(product_path)
+            clean_data_based_on_tci_file(tci_file_path)
         return
 
     # clean data if necessary
     if cleaning:
-        logger.info("Cleaning data")
-        product_path = tci_file_path.parents[4]
-        shutil.rmtree(product_path)
+        clean_data_based_on_tci_file(tci_file_path)
     return
 
 
