@@ -4,6 +4,7 @@ Sentinel-2 data handling module for s2coastalbot.
 
 # standard library
 import datetime
+import logging
 import random
 import shutil
 import xml.etree.ElementTree as ET
@@ -18,9 +19,6 @@ from sentinelsat import SentinelProductsAPI
 from sentinelsat import make_path_filter
 from shapely.geometry import MultiPoint
 
-# current project
-from s2coastalbot.custom_logger import get_custom_logger
-
 
 def read_nodata_pixel_percentage(mtd_file):
     """Read nodata pixel percentage from L2A product metadata file."""
@@ -34,13 +32,12 @@ def read_nodata_pixel_percentage(mtd_file):
     return nodata_pixel_percentage
 
 
-def read_nodata_from_l2a_prod(product_series, output_folder, products_api, logger):
+def read_nodata_from_l2a_prod(product_series, output_folder, products_api):
     """Read nodata pixels percentage in L2A product.
     Input:
         -product_series     pd.Series
         -output_folder      Path
         -products_api       SentinelProductsAPI
-        -logger             logging.Logger
     Output:
         -                   float or None
     """
@@ -52,7 +49,6 @@ def read_nodata_from_l2a_prod(product_series, output_folder, products_api, logge
         product_series["uuid"],
         output_folder,
         nodefilter,
-        logger,
     )
 
     if product_info is None:
@@ -64,17 +60,17 @@ def read_nodata_from_l2a_prod(product_series, output_folder, products_api, logge
         return read_nodata_pixel_percentage(l2a_mtd_file)
 
 
-def sentinelsat_retry_download(api, uuid, output_folder, nodefilter, logger):
+def sentinelsat_retry_download(api, uuid, output_folder, nodefilter):
     """Download product with sentinelsat api with retry and backoff.
     Input:
         -api            SentinelAPI or SentinelProductsAPI
         -uuid           str
         -output_folder  Path
         -nodefilter     nodefilter function
-        -logger         logging.Logger
     Output:
         -               dict or None
     """
+    logger = logging.getLogger()
 
     # initiate sleep time
     sleep_time = 2
@@ -112,7 +108,7 @@ def sentinelsat_retry_download(api, uuid, output_folder, nodefilter, logger):
     return None
 
 
-def download_tci_image(config, output_folder=None, logger=None):
+def download_tci_image(config, output_folder=None):
     """
     Download a random recently acquired Sentinel-2 image.
     Input:
@@ -121,11 +117,12 @@ def download_tci_image(config, output_folder=None, logger=None):
                 access: copernicus_user, copernicus_password
                 misc: aoi_file_downloading, cleaning
         -output_folder          Path or None
-        -logger                 logging.Logger or None
     Output:
         -tci_file_path          Path
         -                       datetime.datetime
     """
+    logger = logging.getLogger()
+
     project_path = Path(__file__).parents[1]
 
     # read config
@@ -135,11 +132,6 @@ def download_tci_image(config, output_folder=None, logger=None):
     cleaning = config.get("misc", "cleaning")
     cloud_cover_max = config.get("search", "cloud_cover_max")
     timerange = config.get("search", "timerange")
-
-    # create logger if necessary
-    if logger is None:
-        log_file = project_path / "logs" / "s2coastalbot.log"
-        logger = get_custom_logger(log_file)
 
     # create output folder if necessary
     if output_folder is None:
@@ -203,7 +195,6 @@ def download_tci_image(config, output_folder=None, logger=None):
                 product_row,
                 output_folder,
                 products_api,
-                logger,
             )
             if nodata_pixel_percentage != 0.0 or nodata_pixel_percentage is None:
                 logger.debug("Tile contains nodata or metadata download failure")
@@ -220,7 +211,7 @@ def download_tci_image(config, output_folder=None, logger=None):
     # download only TCI band
     nodefilter = make_path_filter("*_TCI_10m.jp2")
     product_info = sentinelsat_retry_download(
-        products_api, product_row["uuid"], output_folder, nodefilter, logger
+        products_api, product_row["uuid"], output_folder, nodefilter
     )
 
     if product_info is None:

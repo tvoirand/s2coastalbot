@@ -36,7 +36,6 @@ def s2coastalbot_main(config):
     logger.info("Downloading Sentinel-2 TCI image")
     tci_file_path, date = download_tci_image(
         config,
-        logger=logger,
     )
 
     try:
@@ -44,7 +43,7 @@ def s2coastalbot_main(config):
         logger.info("Postprocessing image")
         aoi_file_postprocessing = Path(config.get("misc", "aoi_file_postprocessing"))
         postprocessed_file_path, subset_center_coords = postprocess_tci_image(
-            tci_file_path, aoi_file_postprocessing, logger
+            tci_file_path, aoi_file_postprocessing
         )
         location_name = get_location_name(subset_center_coords)
         text = "{} ({}) {}".format(
