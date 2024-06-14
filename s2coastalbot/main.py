@@ -50,21 +50,20 @@ def s2coastalbot_main(config):
         tci_file_path, date = download_tci_image(config)
 
         try:
-            # postprocess image to fit twitter or mastodon contraints
+            # postprocess image to get a smaller subset
             logger.info("Postprocessing image")
             aoi_file_postprocessing = Path(config.get("misc", "aoi_file_postprocessing"))
             postprocessed_file_path, subset_center_coords = postprocess_tci_image(
                 tci_file_path, aoi_file_postprocessing
             )
+            if postprocessed_file_path is None:
+                continue  # no subset found within this image, try downloading another image
             location_name = get_location_name(subset_center_coords)
             text = "{} ({}) {}".format(
                 location_name,
                 format_lon_lat(subset_center_coords),
                 date.strftime("%Y %b %d"),
             )
-        except StopIteration:
-            if cleaning:
-                clean_data_based_on_tci_file(tci_file_path)
         except Exception as error_msg:
             logger.error(f"Error postprocessing image: {error_msg}")
             if cleaning:

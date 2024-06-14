@@ -154,4 +154,4 @@ def postprocess_tci_image(input_file, aoi_file):
                 return output_file, (subset_center.x, subset_center.y)
 
         logger.info("Couldn't find subset with <5% nodata in this image")
-        raise StopIteration(f"Couldn't find subset with <5% nodata in {input_file.stem}")
+        return None, None
