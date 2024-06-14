@@ -7,13 +7,11 @@ import logging
 import random
 
 # third party
-import fiona
+import geopandas as gpd
 import numpy as np
 import pyproj
 import rasterio
 from rasterio.windows import Window
-from shapely.geometry import LineString
-from shapely.geometry import MultiLineString
 from shapely.geometry import Polygon
 
 # create some constants
@@ -87,17 +85,9 @@ def postprocess_tci_image(input_file, aoi_file):
 
         # locate image subset center among intersections with coastline
         logger.info("Locating subset center among intersections with coastline")
-        coastline_subsets = []
-        with fiona.open(aoi_file, "r") as infile:
-            for feat in infile:
-                line = LineString(feat["geometry"]["coordinates"])
-                if line.intersects(footprint):
-                    intersection = line.intersection(footprint)
-                    if type(intersection) == LineString:
-                        coastline_subsets.append(line.intersection(footprint))
-                    elif type(intersection) == MultiLineString:
-                        for linestring in intersection.geoms:
-                            coastline_subsets.append(linestring)
+        gdf = gpd.read_file(aoi_file)
+        coastline_subsets = footprint.intersection(gdf["geometry"])
+        coastline_subsets = [line for line in coastline_subsets if not line.is_empty]
 
         # raise error if there are no intersection with coastline
         if coastline_subsets == []:

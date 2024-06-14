@@ -5,14 +5,13 @@ Sentinel-2 data handling module for s2coastalbot.
 # standard library
 import datetime
 import logging
-import random
 import shutil
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from time import sleep
 
 # third party
-import fiona
+import geopandas as gpd
 import pandas as pd
 from sentinelsat import SentinelAPI
 from sentinelsat import SentinelProductsAPI
@@ -151,27 +150,24 @@ def download_tci_image(config, output_folder=None):
     else:
         downloaded_images = pd.read_csv(downloaded_images_file)
 
-    # read footprint
-    footprint = []
-    with fiona.open(aoi_file, "r") as infile:
-        for feat in infile:
-            footprint.append(feat["geometry"]["coordinates"])
-    random.shuffle(footprint)
+    # read and shuffle S2 tiles centroids
+    footprint_df = gpd.read_file(aoi_file)
+    footprint_df = footprint_df.sample(frac=1).reset_index(drop=True)
 
     # search for suitable product
     count = 0
     found_suitable_product = False
-    while not found_suitable_product and count + 1 < len(footprint) / 50:
+    while not found_suitable_product and count + 1 < len(footprint_df) / 50:
 
         # use 50 tiles sliding window to query products on all footprint
-        footprint_subset = footprint[count * 50 : (count + 1) * 50]  # noqa E203
+        footprint_subset = footprint_df[count * 50 : (count + 1) * 50]  # noqa E203
         count += 1
 
         # search images
         logger.info("Querying Sentinel-2 products")
         products_df = api.to_dataframe(
             api.query(
-                MultiPoint(footprint_subset).wkt,
+                MultiPoint(footprint_subset["geometry"]),
                 date=("NOW-{}DAY".format(timerange), "NOW"),
                 platformname="Sentinel-2",
                 producttype="S2MSI2A",
