@@ -104,7 +104,7 @@ def postprocess_tci_image(input_file, aoi_file, logger=None):
                     if type(intersection) == LineString:
                         coastline_subsets.append(line.intersection(footprint))
                     elif type(intersection) == MultiLineString:
-                        for linestring in intersection:
+                        for linestring in intersection.geoms:
                             coastline_subsets.append(linestring)
 
         # raise error if there are no intersection with coastline
