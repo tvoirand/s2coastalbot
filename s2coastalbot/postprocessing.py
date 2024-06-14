@@ -12,6 +12,8 @@ import numpy as np
 import pyproj
 import rasterio
 from rasterio.windows import Window
+from shapely.geometry import LineString
+from shapely.geometry import MultiLineString
 from shapely.geometry import Point
 from shapely.geometry import Polygon
 
@@ -87,7 +89,13 @@ def postprocess_tci_image(input_file, aoi_file):
         # locate image subset center among intersections with coastline
         logger.info("Locating subset center among intersections with coastline")
         gdf = gpd.read_file(aoi_file)
-        coastline_subsets = footprint.intersection(gdf["geometry"])
+        intersection = footprint.intersection(gdf["geometry"])
+        coastline_subsets = []
+        for geom in intersection:
+            if isinstance(geom, LineString):
+                coastline_subsets.append(geom)
+            elif isinstance(geom, MultiLineString):
+                coastline_subsets.extend(geom.geoms)
         coastline_subsets = [line for line in coastline_subsets if not line.is_empty]
 
         # raise error if there are no intersection with coastline
