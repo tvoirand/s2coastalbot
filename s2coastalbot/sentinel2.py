@@ -5,8 +5,6 @@ Sentinel-2 data handling module for s2coastalbot.
 # standard library
 import datetime
 import logging
-import shutil
-import xml.etree.ElementTree as ET
 from pathlib import Path
 from time import sleep
 
@@ -17,46 +15,6 @@ from sentinelsat import SentinelAPI
 from sentinelsat import SentinelProductsAPI
 from sentinelsat import make_path_filter
 from shapely.geometry import MultiPoint
-
-
-def read_nodata_pixel_percentage(mtd_file):
-    """Read nodata pixel percentage from L2A product metadata file."""
-    tree = ET.parse(mtd_file)
-    root = tree.getroot()
-    quality_indicators_info = root.find(
-        "{https://psd-14.sentinel2.eo.esa.int/PSD/User_Product_Level-2A.xsd}Quality_Indicators_Info"
-    )
-    image_content_qi = quality_indicators_info.find("Image_Content_QI")
-    nodata_pixel_percentage = float(image_content_qi.find("NODATA_PIXEL_PERCENTAGE").text)
-    return nodata_pixel_percentage
-
-
-def read_nodata_from_l2a_prod(product_series, output_folder, products_api):
-    """Read nodata pixels percentage in L2A product.
-    Input:
-        -product_series     pd.Series
-        -output_folder      Path
-        -products_api       SentinelProductsAPI
-    Output:
-        -                   float or None
-    """
-
-    # download L2A product metadata file
-    nodefilter = make_path_filter("*MTD_MSIL2A.xml")
-    product_info = sentinelsat_retry_download(
-        products_api,
-        product_series["uuid"],
-        output_folder,
-        nodefilter,
-    )
-
-    if product_info is None:
-        return None
-    else:
-        # read metadata file to check nodata pixels percentage
-        l2a_safe_path = output_folder / product_series["filename"]
-        l2a_mtd_file = next(l2a_safe_path.rglob("*MTD_MSIL2A.xml"))
-        return read_nodata_pixel_percentage(l2a_mtd_file)
 
 
 def sentinelsat_retry_download(api, uuid, output_folder, nodefilter):
@@ -128,7 +86,6 @@ def download_tci_image(config, output_folder=None):
     copernicus_user = config.get("access", "copernicus_user")
     copernicus_password = config.get("access", "copernicus_password")
     aoi_file = Path(config.get("misc", "aoi_file_downloading"))
-    cleaning = config.get("misc", "cleaning")
     cloud_cover_max = config.get("search", "cloud_cover_max")
     timerange = config.get("search", "timerange")
 
@@ -176,30 +133,15 @@ def download_tci_image(config, output_folder=None):
             )
         )
 
-        # select a product that is fully covered (no nodata pixels)
-        logger.info("Selecting a product that is fully covered (no nodata pixels)")
-        for i, product_row in [
-            (i, p)
-            for (i, p) in products_df.iterrows()
-            if not p["title"] in downloaded_images["product"].to_list()
-        ]:
+        # filter out images that were already processed
+        products_df = products_df.loc[
+            ~products_df["title"].isin(downloaded_images["product"].to_list())
+        ]
 
-            logger.debug("Checking nodata for product: {}".format(product_row["title"]))
-
-            # check if product contains nodata pixels (which probably means it's on edge of swath)
-            nodata_pixel_percentage = read_nodata_from_l2a_prod(
-                product_row,
-                output_folder,
-                products_api,
-            )
-            if nodata_pixel_percentage != 0.0 or nodata_pixel_percentage is None:
-                logger.debug("Tile contains nodata or metadata download failure")
-                if cleaning:
-                    shutil.rmtree(output_folder / product_row["filename"])
-            else:
-                logger.info(f"Product {product_row['title']} is fully covered (0% nodata pixels)")
-                found_suitable_product = True
-                break
+        if len(products_df) > 0:
+            # arbitrarily select first product that satisfies criteria
+            product_row = products_df.iloc[0]
+            found_suitable_product = True
 
     if not found_suitable_product:  # case where while loop above didn't generate suitable product
         raise Exception("No suitable product found in any tile within the footprint")

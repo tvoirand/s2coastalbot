@@ -6,11 +6,13 @@ Bot that posts newly acquired Sentinel-2 images of coastal areas, on Twitter and
 # standard library
 import argparse
 import configparser
+import datetime
 import logging
 import shutil
 from pathlib import Path
 
 # third party
+import pandas as pd
 import tweepy
 from mastodon import Mastodon
 
@@ -42,28 +44,39 @@ def s2coastalbot_main(config):
     logger = logging.getLogger()
     cleaning = config.getboolean("misc", "cleaning")
 
-    # download Sentinel-2 True Color Image
-    logger.info("Downloading Sentinel-2 TCI image")
-    tci_file_path, date = download_tci_image(config)
+    postprocessed_file_path = None
+    while postprocessed_file_path is None:
 
-    try:
-        # postprocess image to fit twitter or mastodon contraints
-        logger.info("Postprocessing image")
-        aoi_file_postprocessing = Path(config.get("misc", "aoi_file_postprocessing"))
-        postprocessed_file_path, subset_center_coords = postprocess_tci_image(
-            tci_file_path, aoi_file_postprocessing
-        )
-        location_name = get_location_name(subset_center_coords)
-        text = "{} ({}) {}".format(
-            location_name,
-            format_lon_lat(subset_center_coords),
-            date.strftime("%Y %b %d"),
-        )
-    except Exception as error_msg:
-        logger.error(f"Error postprocessing image: {error_msg}")
-        if cleaning:
-            clean_data_based_on_tci_file(tci_file_path)
-        return
+        # download Sentinel-2 True Color Image
+        logger.info("Downloading Sentinel-2 TCI image")
+        tci_file_path, date = download_tci_image(config)
+
+        try:
+
+            # postprocess image to get a smaller subset
+            logger.info("Postprocessing image")
+            aoi_file_postprocessing = Path(config.get("misc", "aoi_file_postprocessing"))
+            postprocessed_file_path, subset_center_coords = postprocess_tci_image(
+                tci_file_path, aoi_file_postprocessing
+            )
+
+            if postprocessed_file_path is None:
+                # no subset found within this image, try downloading another image
+                if cleaning:
+                    clean_data_based_on_tci_file(tci_file_path)
+                continue
+
+            location_name = get_location_name(subset_center_coords)
+            text = "{} ({}) {}".format(
+                location_name,
+                format_lon_lat(subset_center_coords),
+                date.strftime("%Y %b %d"),
+            )
+
+        except Exception as error_msg:
+            logger.error(f"Error postprocessing image: {error_msg}")
+            if cleaning:
+                clean_data_based_on_tci_file(tci_file_path)
 
     try:
         # authenticate to Mastodon API
@@ -140,6 +153,18 @@ def s2coastalbot_main(config):
         if cleaning:
             clean_data_based_on_tci_file(tci_file_path)
         return
+
+    # update list of posted images
+    posted_images_file = project_path / "data" / "posted_images.csv"
+    if not posted_images_file.exists():  # initiate file if necessary
+        posted_images = pd.DataFrame(columns=["date", "product"])
+    else:
+        posted_images = pd.read_csv(posted_images_file)
+    posted_images.loc[len(posted_images)] = [
+        datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+        tci_file_path.parents[4].stem,
+    ]
+    posted_images.to_csv(posted_images_file, index=False)
 
     # clean data if necessary
     if cleaning:
