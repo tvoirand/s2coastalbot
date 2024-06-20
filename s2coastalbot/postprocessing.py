@@ -132,12 +132,12 @@ def postprocess_tci_image(input_file, aoi_file):
             logger.debug("Reading subset of TCI image")
             array = in_dataset.read(window=window)
 
-            # check ratio of nodata pixels, if it's inferior to 5%, select this subset and continue
+            # look for nodata pixels, if there are none, select this subset and continue
             logger.debug("Checking nodata pixels ratio")
-            non_zero_array = np.count_nonzero(array, axis=0)  # array of non-zero count along bands
-            non_zero_count = np.count_nonzero(non_zero_array)  # amount of non-zero pixles in array
-            nodata_ratio = 1 - non_zero_count / array.shape[1] / array.shape[2]
-            if nodata_ratio < 0.05:
+            nonzero_array = np.count_nonzero(array, axis=0)  # array of non-zero count along bands
+            nodata_array = nonzero_array == 0  # array of bool with True for nodata pixels
+            nodata_count = np.count_nonzero(nodata_array)  # amount of nodata pixels in array
+            if nodata_count == 0:
                 logger.info(
                     "Selected subset center (lon, lat): {:.4f} - {:.4f}".format(
                         subset_center.x, subset_center.y
@@ -161,5 +161,5 @@ def postprocess_tci_image(input_file, aoi_file):
 
                 return output_file, (subset_center.x, subset_center.y)
 
-        logger.info("Couldn't find subset with <5% nodata in this image")
+        logger.info("Couldn't find subset without nodata in this image")
         return None, None
