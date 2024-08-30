@@ -162,7 +162,7 @@ def s2coastalbot_main(config):
         posted_images = pd.read_csv(posted_images_file)
     posted_images.loc[len(posted_images)] = [
         datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
-        tci_file_path.parents[4].stem,
+        tci_file_path.parent.stem,
     ]
     posted_images.to_csv(posted_images_file, index=False)
 
