@@ -95,6 +95,7 @@ def download_tci_image(config, output_folder=None):
         raise Exception("No suitable product found in any tile within the footprint")
 
     # download only TCI band
+    logger.info(f"Downloading TCI file for product {feature['properties']['title']}")
     feature_id = odata_download_with_nodefilter(
         feature["id"],
         output_folder / feature["properties"]["title"],
