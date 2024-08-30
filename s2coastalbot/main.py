@@ -31,7 +31,7 @@ def clean_data_based_on_tci_file(tci_file_path):
     """
     logger = logging.getLogger()
     logger.info("Cleaning data")
-    product_path = tci_file_path.parents[4]
+    product_path = tci_file_path.parent
     shutil.rmtree(product_path)
 
 

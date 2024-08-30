@@ -6,63 +6,15 @@ Sentinel-2 data handling module for s2coastalbot.
 import datetime
 import logging
 from pathlib import Path
-from time import sleep
 
 # third party
 import geopandas as gpd
 import pandas as pd
-from sentinelsat import SentinelAPI
-from sentinelsat import SentinelProductsAPI
-from sentinelsat import make_path_filter
+from cdsetool.query import query_features
 from shapely.geometry import MultiPoint
 
-
-def sentinelsat_retry_download(api, uuid, output_folder, nodefilter):
-    """Download product with sentinelsat api with retry and backoff.
-    Input:
-        -api            SentinelAPI or SentinelProductsAPI
-        -uuid           str
-        -output_folder  Path
-        -nodefilter     nodefilter function
-    Output:
-        -               dict or None
-    """
-    logger = logging.getLogger()
-
-    # initiate sleep time
-    sleep_time = 2
-
-    # limit to 9 tries
-    for retry_nb in range(9):
-
-        try:
-            product_info = api.download(
-                uuid, directory_path=str(output_folder), nodefilter=nodefilter
-            )
-            error_str = None
-
-        except Exception as error:
-            error_str = error
-            logger.error(
-                "Failed sentinelsat download after {} retries, waiting {} seconds".format(
-                    retry_nb, sleep_time
-                )
-            )
-            logger.error(error_str)
-            pass
-
-        # wait for some given time and increase time at each retry
-        if error_str:
-            sleep(sleep_time)
-            sleep_time *= 2
-
-        # leave retry loop in case of success
-        else:
-            return product_info
-
-    # report failure after too many retries
-    logger.error("Backing off sentinelsat download after 10 failures")
-    return None
+# current project
+from s2coastalbot.cdse import odata_download_with_nodefilter
 
 
 def download_tci_image(config, output_folder=None):
@@ -71,7 +23,7 @@ def download_tci_image(config, output_folder=None):
     Input:
         -config                 configparser.ConfigParser
             contains:
-                access: copernicus_user, copernicus_password
+                access: cdse_user, cdse_password
                 misc: aoi_file_downloading, cleaning
         -output_folder          Path or None
     Output:
@@ -83,22 +35,16 @@ def download_tci_image(config, output_folder=None):
     project_path = Path(__file__).parents[1]
 
     # read config
-    copernicus_user = config.get("access", "copernicus_user")
-    copernicus_password = config.get("access", "copernicus_password")
+    cdse_user = config.get("access", "cdse_user")
+    cdse_password = config.get("access", "cdse_password")
     aoi_file = Path(config.get("misc", "aoi_file_downloading"))
-    cloud_cover_max = config.get("search", "cloud_cover_max")
-    timerange = config.get("search", "timerange")
+    cloud_cover_max = config.getint("search", "cloud_cover_max")
+    timerange = config.getint("search", "timerange")
 
     # create output folder if necessary
     if output_folder is None:
         output_folder = project_path / "data"
     output_folder.mkdir(exist_ok=True, parents=True)
-
-    # connect to APIs
-    api = SentinelAPI(copernicus_user, copernicus_password, api_url="https://colhub.met.no")
-    products_api = SentinelProductsAPI(
-        copernicus_user, copernicus_password, api_url="https://colhub.met.no"
-    )
 
     # read list of already downloaded images
     downloaded_images_file = project_path / "data" / "downloaded_images.csv"
@@ -122,50 +68,57 @@ def download_tci_image(config, output_folder=None):
 
         # search images
         logger.info("Querying Sentinel-2 products")
-        products_df = api.to_dataframe(
-            api.query(
-                MultiPoint(footprint_subset["geometry"]),
-                date=("NOW-{}DAY".format(timerange), "NOW"),
-                platformname="Sentinel-2",
-                producttype="S2MSI2A",
-                area_relation="IsWithin",
-                cloudcoverpercentage=(0, cloud_cover_max),
-            )
+        features = query_features(
+            "Sentinel2",
+            {
+                "startDate": datetime.datetime.now() - datetime.timedelta(days=timerange),
+                "completionDate": datetime.datetime.now(),
+                "productType": "S2MSI2A",
+                "geometry": MultiPoint(footprint_subset["geometry"]),
+                "cloudCover": f"[0,{cloud_cover_max}]",
+            },
         )
 
         # filter out images that were already processed
-        products_df = products_df.loc[
-            ~products_df["title"].isin(downloaded_images["product"].to_list())
-        ]
+        features = filter(
+            lambda f: f["properties"]["title"][:-5] not in downloaded_images["product"].to_list(),
+            features,
+        )
 
-        if len(products_df) > 0:
+        features = list(features)
+        if len(features) > 0:
             # arbitrarily select first product that satisfies criteria
-            product_row = products_df.iloc[0]
+            feature = features[0]
             found_suitable_product = True
 
     if not found_suitable_product:  # case where while loop above didn't generate suitable product
         raise Exception("No suitable product found in any tile within the footprint")
 
     # download only TCI band
-    nodefilter = make_path_filter("*_TCI_10m.jp2")
-    product_info = sentinelsat_retry_download(
-        products_api, product_row["uuid"], output_folder, nodefilter
+    feature_id = odata_download_with_nodefilter(
+        feature["id"],
+        output_folder / feature["properties"]["title"],
+        cdse_user,
+        cdse_password,
+        "*_TCI_10m.jp2",
     )
 
-    if product_info is None:
-        raise Exception("Failed sentinelsat download")
+    if feature_id is None:
+        raise Exception("Failed Sentinel-2 image download")
 
     else:
 
         # update list of downloaded images
         downloaded_images.loc[len(downloaded_images)] = [
             datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
-            product_row["title"],
+            feature["properties"]["title"][:-5],
         ]
         downloaded_images.to_csv(downloaded_images_file, index=False)
 
         # find tci file path
-        safe_path = output_folder / product_row["filename"]
+        safe_path = output_folder / feature["properties"]["title"]
         tci_file_path = next(safe_path.rglob("*_TCI_10m.jp2"))
 
-        return tci_file_path, product_info["date"]
+        return tci_file_path, datetime.datetime.fromisoformat(
+            feature["properties"]["completionDate"]
+        )

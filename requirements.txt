@@ -1,5 +1,4 @@
 tweepy
-sentinelsat @ git+https://github.com/tvoirand/sentinelsat@dev_thib
 shapely
 rasterio
 geopandas
@@ -7,3 +6,4 @@ pyproj
 Mastodon.py
 pytz
 backoff
+cdsetool
