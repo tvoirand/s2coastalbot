@@ -40,9 +40,7 @@ def search_nodes(node_url: str, pattern: str, exclude: bool = False) -> List[Dic
         # If this node is a file, check for pattern match and optionally append to results
         elif node["ContentLength"] >= 0:
             match = fnmatch.fnmatch(node["Name"], pattern)
-            if exclude and not match:
-                output_nodes.append(node)
-            elif match:
+            if match and not exclude or exclude and not match:
                 output_nodes.append(node)
 
     return output_nodes
