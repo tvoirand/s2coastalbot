@@ -22,6 +22,27 @@ INPUT_MAX_SIZE = 10980
 SUBSET_SIZE = 1000
 
 
+def get_window(center, subset_width, subset_height, max_width, max_height):
+    """Find pixels window around target center taking into account image bounds."""
+    row_start = center[0] - int(subset_height / 2)
+    row_stop = center[0] + int(subset_height / 2)
+    col_start = center[1] - int(subset_width / 2)
+    col_stop = center[1] + int(subset_width / 2)
+    if row_start < 0:
+        row_stop += -row_start
+        row_start += -row_start
+    if row_stop > max_height:
+        row_start -= row_stop - max_height
+        row_stop -= row_stop - max_height
+    if col_start < 0:
+        col_stop += -col_start
+        col_start += -col_start
+    if col_stop > max_width:
+        col_start -= col_stop - max_width
+        col_stop -= col_stop - max_width
+    return row_start, row_stop, col_start, col_stop
+
+
 def postprocess_tci_image(input_file, aoi_file):
     """
     Postprocess TCI image for s2coastalbot.
@@ -34,26 +55,6 @@ def postprocess_tci_image(input_file, aoi_file):
         -center_coords  (float, float)
             lon, lat
     """
-
-    def get_window(center, subset_width, subset_height, max_width, max_height):
-        """Find pixels window around target center taking into account image bounds."""
-        row_start = center[0] - int(subset_height / 2)
-        row_stop = center[0] + int(subset_height / 2)
-        col_start = center[1] - int(subset_width / 2)
-        col_stop = center[1] + int(subset_width / 2)
-        if row_start < 0:
-            row_stop += -row_start
-            row_start += -row_start
-        if row_stop > max_height:
-            row_start -= row_stop - max_height
-            row_stop -= row_stop - max_height
-        if col_start < 0:
-            col_stop += -col_start
-            col_start += -col_start
-        if col_stop > max_width:
-            col_start -= col_stop - max_width
-            col_stop -= col_stop - max_width
-        return row_start, row_stop, col_start, col_stop
 
     logger = logging.getLogger()
 
