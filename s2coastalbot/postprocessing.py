@@ -55,18 +55,6 @@ def postprocess_tci_image(input_file, aoi_file):
             col_stop -= col_stop - max_width
         return row_start, row_stop, col_start, col_stop
 
-    def translate(value, in_min, in_max, out_min, out_max):
-        """Map value from one range to another"""
-        # compute ranges spans
-        in_span = in_max - in_min
-        out_span = out_max - out_min
-
-        # translate input range to a 0-1 range
-        value_scaled = (value - in_min) / in_span
-
-        # translate 0-1 range into output range
-        return out_min + (value_scaled * out_span)
-
     logger = logging.getLogger()
 
     # create some constants
