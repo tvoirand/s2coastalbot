@@ -1,6 +1,4 @@
-"""
-Image postprocessing module for s2coastalbot.
-"""
+"""Image postprocessing module for s2coastalbot."""
 
 # standard library
 import logging
@@ -22,38 +20,48 @@ INPUT_MAX_SIZE = 10980
 SUBSET_SIZE = 1000
 
 
-def get_window(center, subset_width, subset_height, max_width, max_height):
-    """Find pixels window around target center taking into account image bounds."""
-    row_start = center[0] - int(subset_height / 2)
-    row_stop = center[0] + int(subset_height / 2)
-    col_start = center[1] - int(subset_width / 2)
-    col_stop = center[1] + int(subset_width / 2)
+def get_window(window_center, window_width, window_height, image_width, image_height):
+    """Find pixels window around a given center taking into account image bounds.
+
+    The window width and height are fixed, and its center might be shifted if the desired window
+    surpasses image bounds.
+
+    Args:
+        window_center (int, int): Pixel coordinates (row, col) for the desired center
+        window_width (int)
+        window_height (int)
+        image_width (int)
+        image_height (int)
+    """
+    row_start = window_center[0] - int(window_height / 2)
+    row_stop = window_center[0] + int(window_height / 2)
+    col_start = window_center[1] - int(window_width / 2)
+    col_stop = window_center[1] + int(window_width / 2)
     if row_start < 0:
         row_stop += -row_start
         row_start += -row_start
-    if row_stop > max_height:
-        row_start -= row_stop - max_height
-        row_stop -= row_stop - max_height
+    if row_stop > image_height:
+        row_start -= row_stop - image_height
+        row_stop -= row_stop - image_height
     if col_start < 0:
         col_stop += -col_start
         col_start += -col_start
-    if col_stop > max_width:
-        col_start -= col_stop - max_width
-        col_stop -= col_stop - max_width
+    if col_stop > image_width:
+        col_start -= col_stop - image_width
+        col_stop -= col_stop - image_width
     return row_start, row_stop, col_start, col_stop
 
 
 def postprocess_tci_image(input_file, aoi_file):
-    """
-    Postprocess TCI image for s2coastalbot.
-    Input:
-        -input_file     Path
-        -aoi_file       Path
-            Geojson file containing polyline shapes
-    Output:
-        -output_file    Path
-        -center_coords  (float, float)
-            lon, lat
+    """Postprocess TCI image for s2coastalbot.
+
+    Args:
+        input_file (Path)
+        aoi_file (Path): Geojson file containing polyline shapes
+
+    Returns:
+        output_file (Path)
+        center_coords (float, float): lon, lat
     """
 
     logger = logging.getLogger()
