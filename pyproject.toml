@@ -11,3 +11,6 @@ import_heading_stdlib = "standard library"
 import_heading_thirdparty = "third party"
 import_heading_firstparty = "current project"
 import_heading_localfolder = "local folder"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
