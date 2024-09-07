@@ -155,6 +155,7 @@ def s2coastalbot_main(config):
         return
 
     # update list of posted images
+    project_path = Path(__file__).parents[1]
     posted_images_file = project_path / "data" / "posted_images.csv"
     if not posted_images_file.exists():  # initiate file if necessary
         posted_images = pd.DataFrame(columns=["date", "product"])
