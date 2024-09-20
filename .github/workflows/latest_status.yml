@@ -1,6 +1,5 @@
 name: Check latest status date
 on:
-  push:
   schedule:
     - cron: "26 10 * * 4"  # Set to run every Thursdays
 jobs:
