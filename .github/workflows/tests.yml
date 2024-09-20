@@ -1,0 +1,16 @@
+name: Run tests
+on:
+  push:
+  schedule:
+    - cron: "47 7 2 * *"  # Set to run monthly
+jobs:
+  tests:
+    runs-on: python:3.12.6-slim-bookworm
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Install s2coastalbot
+        run: pip install .
+      - name: Run tests
+        run: pytest tests
