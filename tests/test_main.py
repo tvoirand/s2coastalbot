@@ -37,7 +37,13 @@ def mock_functions(tmp_dir):
     mock_get_location_name = mock.MagicMock(return_value="mock location name")
     mock_clean_data = mock.MagicMock()
 
+    # Mock Path(__file__) to use tmp_dir instead of project path, were "data" folder lives
+    data_dir = tmp_dir / "data"
+    data_dir.mkdir(exist_ok=True, parents=True)
+    mock_path = mock.MagicMock(return_value=tmp_dir / "mock_subdir" / "mock_file")
+
     return {
+        "mock_path": mock_path,
         "mock_download_tci_image": mock_download_tci_image,
         "mock_postprocess_tci_image": mock_postprocess_tci_image,
         "mock_get_location_name": mock_get_location_name,
@@ -117,6 +123,8 @@ def test_mastodon_post(tmp_dir, mock_functions, mock_config):
     ), mock.patch(
         "s2coastalbot.main.Mastodon", mock_mastodon
     ), mock.patch(
+        "s2coastalbot.main.Path", mock_functions["mock_path"]
+    ), mock.patch(
         "s2coastalbot.main.clean_data_based_on_tci_file", mock_functions["mock_clean_data"]
     ):
         s2coastalbot_main(mock_config)
@@ -161,6 +169,8 @@ def test_twitter_post(tmp_dir, mock_functions, mock_config):
         "s2coastalbot.main.tweepy.API", mock_twitter_api
     ), mock.patch(
         "s2coastalbot.main.tweepy.Client", mock_twitter_client
+    ), mock.patch(
+        "s2coastalbot.main.Path", mock_functions["mock_path"]
     ), mock.patch(
         "s2coastalbot.main.clean_data_based_on_tci_file", mock_functions["mock_clean_data"]
     ):
@@ -225,7 +235,7 @@ def test_update_posted_images_csv(tmp_dir, mock_functions, mock_config):
     ), mock.patch(
         "s2coastalbot.main.tweepy.Client", mock.MagicMock()
     ), mock.patch(
-        "s2coastalbot.main.Path", return_value=tmp_dir / "data" / "mock_subdir"
+        "s2coastalbot.main.Path", mock_functions["mock_path"]
     ), mock.patch(
         "s2coastalbot.main.clean_data_based_on_tci_file", mock_functions["mock_clean_data"]
     ):
