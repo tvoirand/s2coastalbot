@@ -15,4 +15,4 @@ jobs:
           pip install -r requirements-dev.txt
           pip install .
       - name: Run tests
-        run: venv/bin/pytest tests
+        run: venv/bin/pytest tests/test_*

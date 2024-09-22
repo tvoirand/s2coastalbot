@@ -13,4 +13,4 @@ jobs:
           source venv/bin/activate
           pip install -r requirements-dev.txt
       - name: Run tests
-        run: venv/bin/pytest tests/test_latest_status.py
+        run: venv/bin/pytest tests/check_latest_status.py
