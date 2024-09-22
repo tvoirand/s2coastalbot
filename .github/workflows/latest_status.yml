@@ -4,7 +4,7 @@ on:
     - cron: "26 10 * * 4"  # Set to run every Thursdays
 jobs:
   latest-status:
-    runs-on: python:3.12.6-slim-bookworm
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3
       - name: Install dependencies
