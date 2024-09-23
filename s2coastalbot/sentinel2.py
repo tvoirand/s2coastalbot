@@ -64,6 +64,7 @@ def download_tci_image(config, output_folder=None):
 
         # use 50 tiles sliding window to query products on all footprint
         footprint_subset = footprint_df[count * 50 : (count + 1) * 50]  # noqa E203
+        footprint_subset.reset_index(inplace=True)
         count += 1
 
         # search images

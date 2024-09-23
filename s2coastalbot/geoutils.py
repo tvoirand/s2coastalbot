@@ -1,6 +1,4 @@
-"""
-Geoutils module for s2coastalbot project.
-"""
+"""Utils functions to handle geolocations."""
 
 # standard library
 import json
@@ -18,13 +16,13 @@ def get_url(url, headers=None):
 
 
 def format_lon_lat(coords):
-    """
-    Convert latitude and longitude into an address using OSM
-    Input:
-        -coords     (float, float)
-            lon, lat
-    Output:
-        -s          str
+    """Format latitude and longitude into readable text
+
+    Args:
+        coords (float, float): lon, lat
+
+    Returns:
+        s (str)
     """
     lon, lat = coords
     s = ""
@@ -44,13 +42,13 @@ def format_lon_lat(coords):
 
 
 def get_location_name(input_coords):
-    """
-    Convert latitude and longitude into an address using OSM
-    Input:
-        -input_coords   (float, float)
-            lon, lat
-    Output:
-        -               str
+    """Convert latitude and longitude into an address using OSM.
+
+    Args:
+        input_coords (float, float): lon, lat
+
+    Returns:
+        (str)
     """
 
     # initiate request points, requests count, OSM response, and search circle radius

@@ -1,9 +1,10 @@
-name: Check latest status date
+name: Run tests
 on:
+  push:
   schedule:
-    - cron: "26 10 * * 4"  # Set to run every Thursdays
+    - cron: "47 7 2 * *"  # Set to run monthly
 jobs:
-  latest-status:
+  tests:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3
@@ -12,5 +13,6 @@ jobs:
           python3 -m venv venv
           source venv/bin/activate
           pip install -r requirements-dev.txt
+          pip install .
       - name: Run tests
-        run: venv/bin/pytest tests/check_latest_status.py
+        run: venv/bin/pytest tests/test_*
