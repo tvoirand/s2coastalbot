@@ -12,6 +12,13 @@ For example using pip:
 1. Install requirements: `pip install -r requirements.txt`
 2. Install project package in development mode: `pip install -e .`
 
+### Configuration
+
+To configure the bot, create a `config/config.ini` file in s2coastalbot's development folder, following the structure of `example_config.ini`.
+
+The `mastodon_secret_file` parameter should point a file containing the OAuth access token, which is required to log into the Mastodon API.
+This file can be generated using the instructions provided in [Mastodon.py's documentation](https://mastodonpy.readthedocs.io/en/stable/04_auth.html), and more precisely with the `to_file` argument of `Mastodon.log_in()`.
+
 ### TODO
 
 * [ ] Improve list of coastal tiles by using coastline vector file more precise than the [Natural Earth file](https://www.naturalearthdata.com/downloads/10m-physical-vectors/10m-coastline/)

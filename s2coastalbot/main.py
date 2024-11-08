@@ -81,22 +81,8 @@ def s2coastalbot_main(config):
     try:
         # authenticate to Mastodon API
         logger.info("Authenticating to Mastodon API")
-        mastodon_email = config.get("access", "mastodon_login_email")
-        mastodon_password = config.get("access", "mastodon_password")
-        mastodon_client_id = config.get("access", "mastodon_client_id")
-        mastodon_client_secret = config.get("access", "mastodon_client_secret")
-        mastodon_base_url = config.get("access", "mastodon_base_url")
         mastodon_secret_file = config.get("access", "mastodon_secret_file")
-        mastodon = Mastodon(
-            client_id=mastodon_client_id,
-            client_secret=mastodon_client_secret,
-            api_base_url=mastodon_base_url,
-        )
-        mastodon.log_in(
-            mastodon_email,
-            mastodon_password,
-            to_file=mastodon_secret_file,
-        )
+        mastodon = Mastodon(access_token=mastodon_secret_file)
     except Exception as error_msg:
         logger.error(f"Error authenticating to Mastodon API: {error_msg}")
         if cleaning:

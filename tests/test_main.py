@@ -64,11 +64,6 @@ def mock_config(mock_functions):
         "aoi_file_postprocessing": mock_functions["mock_aoi_file"],
     }
     config["access"] = {
-        "mastodon_login_email": "mock_mastodon_login_email",
-        "mastodon_password": "mock_mastodon_password",
-        "mastodon_client_id": "mock_mastodon_client_id",
-        "mastodon_client_secret": "mock_mastodon_client_secret",
-        "mastodon_base_url": "mock_mastodon_base_url",
         "mastodon_secret_file": "mock_mastodon_secret_file",
         "twitter_consumer_key": "mock_twitter_consumer_key",
         "twitter_consumer_secret": "mock_twitter_consumer_secret",
@@ -131,12 +126,7 @@ def test_mastodon_post(tmp_dir, mock_functions, mock_config):
 
     # Assert Mastodon API interaction
     # Cleaning is expected to be called when Twitter fails due to missing config
-    mock_mastodon.assert_called_once()
-    mock_mastodon_instance.log_in.assert_called_once_with(
-        "mock_mastodon_login_email",
-        "mock_mastodon_password",
-        to_file="mock_mastodon_secret_file",
-    )
+    mock_mastodon.assert_called_once_with(access_token="mock_mastodon_secret_file")
     mock_mastodon_instance.media_post.assert_called_once_with(
         media_file=mock_functions["mock_postprocessed_file"],
         description="Snapshot of a satellite image of a coastal area.",
