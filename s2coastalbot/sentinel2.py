@@ -5,6 +5,7 @@ Sentinel-2 data handling module for s2coastalbot.
 # standard library
 import datetime
 import logging
+import shutil
 from pathlib import Path
 
 # third party
@@ -31,6 +32,7 @@ def download_tci_image(config, output_folder=None):
         -                       datetime.datetime
     """
     logger = logging.getLogger()
+    cleaning = config.getboolean("misc", "cleaning")
 
     project_path = Path(__file__).parents[1]
 
@@ -97,16 +99,24 @@ def download_tci_image(config, output_folder=None):
 
     # download only TCI band
     logger.info(f"Downloading TCI file for product {feature['properties']['title']}")
-    feature_id = odata_download_with_nodefilter(
-        feature["id"],
-        output_folder / feature["properties"]["title"],
-        cdse_user,
-        cdse_password,
-        "*_TCI_10m.jp2",
-    )
+    try:
 
-    if feature_id is None:
-        raise Exception("Failed Sentinel-2 image download")
+        feature_id = odata_download_with_nodefilter(
+            feature["id"],
+            output_folder / feature["properties"]["title"],
+            cdse_user,
+            cdse_password,
+            "*_TCI_10m.jp2",
+        )
+        if feature_id is None:
+            raise ValueError("Feature ID is None after download")
+
+    except Exception as error_msg:
+        logger.error(f"Failed Sentinel-2 image download: {error_msg}")
+        if cleaning:
+            logger.info("Cleaning data")
+            shutil.rmtree(output_folder / feature["properties"]["title"])
+        raise Exception(error_msg)
 
     else:
 
