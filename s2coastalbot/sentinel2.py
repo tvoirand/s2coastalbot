@@ -5,6 +5,7 @@ Sentinel-2 data handling module for s2coastalbot.
 # standard library
 import datetime
 import logging
+import shutil
 from pathlib import Path
 
 # third party
@@ -31,6 +32,7 @@ def download_tci_image(config, output_folder=None):
         -                       datetime.datetime
     """
     logger = logging.getLogger()
+    cleaning = config.getboolean("misc", "cleaning")
 
     project_path = Path(__file__).parents[1]
 
@@ -90,6 +92,7 @@ def download_tci_image(config, output_folder=None):
         if len(features) > 0:
             # arbitrarily select first product that satisfies criteria
             feature = features[0]
+            safe_path = output_folder / feature["properties"]["title"]
             found_suitable_product = True
 
     if not found_suitable_product:  # case where while loop above didn't generate suitable product
@@ -97,16 +100,24 @@ def download_tci_image(config, output_folder=None):
 
     # download only TCI band
     logger.info(f"Downloading TCI file for product {feature['properties']['title']}")
-    feature_id = odata_download_with_nodefilter(
-        feature["id"],
-        output_folder / feature["properties"]["title"],
-        cdse_user,
-        cdse_password,
-        "*_TCI_10m.jp2",
-    )
+    try:
 
-    if feature_id is None:
-        raise Exception("Failed Sentinel-2 image download")
+        feature_id = odata_download_with_nodefilter(
+            feature["id"],
+            safe_path,
+            cdse_user,
+            cdse_password,
+            "*_TCI_10m.jp2",
+        )
+        if feature_id is None:
+            raise ValueError("Feature ID is None after download")
+
+    except Exception as error_msg:
+        logger.error(f"Failed Sentinel-2 image download: {error_msg}")
+        if cleaning and safe_path.exists():
+            logger.info("Cleaning data")
+            shutil.rmtree(safe_path)
+        raise Exception(error_msg)
 
     else:
 
@@ -118,7 +129,6 @@ def download_tci_image(config, output_folder=None):
         downloaded_images.to_csv(downloaded_images_file, index=False)
 
         # find tci file path
-        safe_path = output_folder / feature["properties"]["title"]
         tci_file_path = next(safe_path.rglob("*_TCI_10m.jp2"))
 
         return tci_file_path, datetime.datetime.fromisoformat(
