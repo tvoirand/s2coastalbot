@@ -146,7 +146,25 @@ def test_postprocess_tci_image(mock_rasterio_open, mock_gpd_read_file):
     indirect=["mock_rasterio_open", "mock_gpd_read_file"],
 )
 def test_postprocess_tci_image_only_nodata(mock_rasterio_open, mock_gpd_read_file):
-    """Postprocessing "sad" test where image doesn't contains data and coastline outside bounds."""
+    """Postprocessing "sad" test where image doesn't contain data."""
+
+    with mock.patch("s2coastalbot.postprocessing.rasterio.open", mock_rasterio_open), mock.patch(
+        "s2coastalbot.postprocessing.gpd.read_file", mock_gpd_read_file
+    ):
+        output_file, center_coords = postprocess_tci_image(
+            Path("tmp/fake/path/input.tif"), Path("tmp/fake/path/aoi.geojson")
+        )
+        assert output_file is None
+        assert center_coords is None
+
+
+@pytest.mark.parametrize(
+    "mock_rasterio_open, mock_gpd_read_file",
+    [(255, True)],
+    indirect=["mock_rasterio_open", "mock_gpd_read_file"],
+)
+def test_postprocess_tci_blank_image(mock_rasterio_open, mock_gpd_read_file):
+    """Postprocessing "sad" test where image contains only white pixels."""
 
     with mock.patch("s2coastalbot.postprocessing.rasterio.open", mock_rasterio_open), mock.patch(
         "s2coastalbot.postprocessing.gpd.read_file", mock_gpd_read_file
@@ -164,7 +182,7 @@ def test_postprocess_tci_image_only_nodata(mock_rasterio_open, mock_gpd_read_fil
     indirect=["mock_rasterio_open", "mock_gpd_read_file"],
 )
 def test_postprocess_tci_image_no_intersection(mock_rasterio_open, mock_gpd_read_file):
-    """Postprocessing "sad" test where image contains data and coastline outside bounds."""
+    """Postprocessing "sad" test where coastline outside bounds."""
 
     with mock.patch("s2coastalbot.postprocessing.rasterio.open", mock_rasterio_open), mock.patch(
         "s2coastalbot.postprocessing.gpd.read_file", mock_gpd_read_file

@@ -129,12 +129,17 @@ def postprocess_tci_image(input_file, aoi_file):
             logger.debug("Reading subset of TCI image")
             array = in_dataset.read(window=window)
 
-            # look for nodata pixels, if there are none, select this subset and continue
+            # look for nodata pixels
             logger.debug("Checking nodata pixels ratio")
             nonzero_array = np.count_nonzero(array, axis=0)  # array of non-zero count along bands
             nodata_array = nonzero_array == 0  # array of bool with True for nodata pixels
             nodata_count = np.count_nonzero(nodata_array)  # amount of nodata pixels in array
-            if nodata_count == 0:
+
+            # check the subset mean pixel value to avoid blank images (white is 255 for uint8)
+            mean_pixel_value = np.mean(array)
+
+            # select this subset if it contains non-white pixels and if it doesn't contain nodata
+            if mean_pixel_value < 240 and nodata_count == 0:
                 logger.info(
                     "Selected subset center (lon, lat): {:.4f} - {:.4f}".format(
                         subset_center.x, subset_center.y
