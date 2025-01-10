@@ -8,6 +8,6 @@ from setuptools import setup
 
 setup(
     name="s2coastalbot",
-    version="0.14",
+    version="0.15",
     packages=find_packages(exclude=["tests"]),
 )
