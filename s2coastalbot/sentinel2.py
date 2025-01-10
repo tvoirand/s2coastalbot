@@ -92,6 +92,7 @@ def download_tci_image(config, output_folder=None):
         if len(features) > 0:
             # arbitrarily select first product that satisfies criteria
             feature = features[0]
+            safe_path = output_folder / feature["properties"]["title"]
             found_suitable_product = True
 
     if not found_suitable_product:  # case where while loop above didn't generate suitable product
@@ -103,7 +104,7 @@ def download_tci_image(config, output_folder=None):
 
         feature_id = odata_download_with_nodefilter(
             feature["id"],
-            output_folder / feature["properties"]["title"],
+            safe_path,
             cdse_user,
             cdse_password,
             "*_TCI_10m.jp2",
@@ -113,9 +114,9 @@ def download_tci_image(config, output_folder=None):
 
     except Exception as error_msg:
         logger.error(f"Failed Sentinel-2 image download: {error_msg}")
-        if cleaning:
+        if cleaning and safe_path.exists():
             logger.info("Cleaning data")
-            shutil.rmtree(output_folder / feature["properties"]["title"])
+            shutil.rmtree(safe_path)
         raise Exception(error_msg)
 
     else:
@@ -128,7 +129,6 @@ def download_tci_image(config, output_folder=None):
         downloaded_images.to_csv(downloaded_images_file, index=False)
 
         # find tci file path
-        safe_path = output_folder / feature["properties"]["title"]
         tci_file_path = next(safe_path.rglob("*_TCI_10m.jp2"))
 
         return tci_file_path, datetime.datetime.fromisoformat(
