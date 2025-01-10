@@ -146,7 +146,7 @@ def test_failed_tci_image_download(mock_config, tmp_dir, mock_footprint_df, mock
     ), mock.patch(
         "s2coastalbot.sentinel2.odata_download_with_nodefilter", mock_odata_download
     ):
-        with pytest.raises(Exception, match="Failed Sentinel-2 image download"):
+        with pytest.raises(Exception, match="Feature ID is None after download"):
             download_tci_image(mock_config)
 
 
