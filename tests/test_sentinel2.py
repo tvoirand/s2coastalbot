@@ -39,7 +39,10 @@ def mock_config(tmp_dir):
     """Fixture to create a mock config."""
     config = configparser.ConfigParser()
     config["access"] = {"cdse_user": "mock_user", "cdse_password": "mock_password"}
-    config["misc"] = {"aoi_file_downloading": str(tmp_dir / "mock_aoi_file.geojson")}
+    config["misc"] = {
+        "aoi_file_downloading": str(tmp_dir / "mock_aoi_file.geojson"),
+        "cleaning": True,
+    }
     config["search"] = {"cloud_cover_max": "30", "timerange": "10"}
     return config
 
