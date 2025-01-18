@@ -63,13 +63,7 @@ def mock_config(mock_functions):
         "cleaning": True,
         "aoi_file_postprocessing": mock_functions["mock_aoi_file"],
     }
-    config["access"] = {
-        "mastodon_secret_file": "mock_mastodon_secret_file",
-        "twitter_consumer_key": "mock_twitter_consumer_key",
-        "twitter_consumer_secret": "mock_twitter_consumer_secret",
-        "twitter_access_token": "mock_twitter_access_token",
-        "twitter_access_token_secret": "mock_twitter_access_token_secret",
-    }
+    config["access"] = {"mastodon_secret_file": "mock_mastodon_secret_file"}
     return config
 
 
@@ -125,7 +119,6 @@ def test_mastodon_post(tmp_dir, mock_functions, mock_config):
         s2coastalbot_main(mock_config)
 
     # Assert Mastodon API interaction
-    # Cleaning is expected to be called when Twitter fails due to missing config
     mock_mastodon.assert_called_once_with(access_token="mock_mastodon_secret_file")
     mock_mastodon_instance.media_post.assert_called_once_with(
         media_file=mock_functions["mock_postprocessed_file"],
@@ -135,45 +128,6 @@ def test_mastodon_post(tmp_dir, mock_functions, mock_config):
         status=mock.ANY, media_ids=["mock_media_id"], visibility="public"
     )
     assert "mock location name" in mock_mastodon_instance.status_post.call_args[1]["status"]
-
-
-def test_twitter_post(tmp_dir, mock_functions, mock_config):
-    """Test posting image to Twitter."""
-
-    # Mock Twitter media upload and post behavior
-    mock_twitter_api_instance = mock.MagicMock()
-    mock_twitter_api_instance.media_upload.return_value.media_id = "mock_media_id"
-    mock_twitter_api = mock.MagicMock(return_value=mock_twitter_api_instance)
-    mock_twitter_client_instance = mock.MagicMock()
-    mock_twitter_client = mock.MagicMock(return_value=mock_twitter_client_instance)
-
-    with mock.patch(
-        "s2coastalbot.main.download_tci_image", mock_functions["mock_download_tci_image"]
-    ), mock.patch(
-        "s2coastalbot.main.postprocess_tci_image", mock_functions["mock_postprocess_tci_image"]
-    ), mock.patch(
-        "s2coastalbot.main.get_location_name", mock_functions["mock_get_location_name"]
-    ), mock.patch(
-        "s2coastalbot.main.Mastodon", mock.MagicMock()
-    ), mock.patch(
-        "s2coastalbot.main.tweepy.API", mock_twitter_api
-    ), mock.patch(
-        "s2coastalbot.main.tweepy.Client", mock_twitter_client
-    ), mock.patch(
-        "s2coastalbot.main.Path", mock_functions["mock_path"]
-    ), mock.patch(
-        "s2coastalbot.main.clean_data_based_on_tci_file", mock_functions["mock_clean_data"]
-    ):
-        s2coastalbot_main(mock_config)
-
-    # Assert Twitter API interaction
-    mock_twitter_api.assert_called_once()
-    mock_twitter_api_instance.media_upload.assert_called_once_with(
-        filename=mock_functions["mock_postprocessed_file"]
-    )
-    mock_twitter_client_instance.create_tweet.assert_called_once_with(
-        text=mock.ANY, media_ids=["mock_media_id"], user_auth=True
-    )
 
 
 def test_error_in_posting(tmp_dir, mock_functions, mock_config, caplog):
@@ -220,10 +174,6 @@ def test_update_posted_images_csv(tmp_dir, mock_functions, mock_config):
         "s2coastalbot.main.get_location_name", mock_functions["mock_get_location_name"]
     ), mock.patch(
         "s2coastalbot.main.Mastodon", mock.MagicMock()
-    ), mock.patch(
-        "s2coastalbot.main.tweepy.API", mock.MagicMock()
-    ), mock.patch(
-        "s2coastalbot.main.tweepy.Client", mock.MagicMock()
     ), mock.patch(
         "s2coastalbot.main.Path", mock_functions["mock_path"]
     ), mock.patch(
