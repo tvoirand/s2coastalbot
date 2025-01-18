@@ -8,7 +8,7 @@ import socket
 from logging.handlers import RotatingFileHandler
 
 APP_NAME = "s2coastalbot"
-APP_VERSION = "0.16"
+APP_VERSION = "1.0"
 
 
 def get_custom_logger(log_file, level=20):
