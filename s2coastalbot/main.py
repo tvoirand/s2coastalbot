@@ -13,7 +13,6 @@ from pathlib import Path
 
 # third party
 import pandas as pd
-import tweepy
 from mastodon import Mastodon
 
 # current project
@@ -103,39 +102,6 @@ def s2coastalbot_main(config):
         )
     except Exception as error_msg:
         logger.error(f"Error posting toot: {error_msg}")
-        if cleaning:
-            clean_data_based_on_tci_file(tci_file_path)
-        return
-
-    try:
-        # authenticate twitter account
-        logger.info("Authenticating to twitter API")
-        twitter_key = config.get("access", "twitter_consumer_key")
-        twitter_secret = config.get("access", "twitter_consumer_secret")
-        twitter_token = config.get("access", "twitter_access_token")
-        twitter_token_secret = config.get("access", "twitter_access_token_secret")
-        auth = tweepy.OAuthHandler(twitter_key, twitter_secret)
-        auth.set_access_token(twitter_token, twitter_token_secret)
-        apiv1 = tweepy.API(auth)  # API v1.1 required to upload media
-        apiv2 = tweepy.Client(  # API v2 required to post tweets
-            consumer_key=twitter_key,
-            consumer_secret=twitter_secret,
-            access_token=twitter_token,
-            access_token_secret=twitter_token_secret,
-        )
-    except Exception as error_msg:
-        logger.error(f"Error authenticating to twitter API: {error_msg}")
-        if cleaning:
-            clean_data_based_on_tci_file(tci_file_path)
-        return
-
-    try:
-        # post tweet
-        logger.info("Posting tweet")
-        media = apiv1.media_upload(filename=postprocessed_file_path)
-        apiv2.create_tweet(text=text, media_ids=[media.media_id], user_auth=True)
-    except Exception as error_msg:
-        logger.error(f"Error posting tweet: {error_msg}")
         if cleaning:
             clean_data_based_on_tci_file(tci_file_path)
         return
